@@ -1,69 +1,99 @@
+#!/usr/bin/python
+
 '''
-@author: Elmarie
+# Elmarie van Heerden
+# 17 June 2014
 '''
 
+# List of standard libraries that need to be imported
 import numpy as np
+from statsmodels.tsa.filters import arfilter
 import matplotlib.pyplot as plt
-import gaussianProcesses as GP
 
 
-#np.random.seed(587482)
-seed1 = np.random.seed()
-seed2 = np.random.seed()
-seed3 = np.random.seed()
-seed4 = np.random.seed()
-seed5 = np.random.seed()
-
-l=5
-z1=GP.squaredExponentialKernel(0,1,l,1000,10,seed1)
-z2=GP.squaredExponentialKernel(3,1,l,1000,10,seed2)
-z3=GP.squaredExponentialKernel(6,1,l,1000,10,seed3)
-z4=GP.squaredExponentialKernel(9,1,l,1000,10,seed4)
-z5=GP.squaredExponentialKernel(12,1,l,1000,10,seed5)
-
-dt = 0.01
-t = np.arange(0, (10+dt), dt)
-plt.xlabel('Input')
-plt.ylabel('Output')
-plt.grid(True)
-#plt.title(r'$\lambda = 1$')
-plt.title('SE')
-plt.plot(t,z1,'b',t,z2,'g',t,z3,'k',t,z4,'y',t,z5,'r')
-plt.show()
+# List of customized libraries that need to be imported
+import gaussianProcessKernels as GP
 
 
-l=5;
-a=0.5
-z1=GP.rationalQuadraticKernel(0,1,l,a,1000,10,seed1)
-z2=GP.rationalQuadraticKernel(3,1,l,a,1000,10,seed2)
-z3=GP.rationalQuadraticKernel(6,1,l,a,1000,10,seed3)
-z4=GP.rationalQuadraticKernel(9,1,l,a,1000,10,seed4)
-z5=GP.rationalQuadraticKernel(12,1,l,a,1000,10,seed5)
+def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation, seedValue):
+###########################################################################
+# 1. Generate baseline drift per polarization channel by convolving
+#    an AR function with samples drawn from a unit variance Guassian distribution
+###########################################################################
 
-dt = 0.01
-t = np.arange(0, (10+dt), dt)
-plt.xlabel('Input')
-plt.ylabel('Output')
-plt.grid(True)
-plt.title('RQ')
-plt.plot(t,z1,'b',t,z2,'g',t,z3,'k',t,z4,'y',t,z5,'r')
-plt.show()
+    cov1 = GP.squaredExponentialKernel(height, lamda , numberOfSamples, timeDurationOfSimulation)
+    cov1 = cov1.astype(np.float64, copy=False)
+    cov1 = cov1+np.eye(numberOfSamples)*0.000001
+
+    mask = ( cov1[0,:]  >1e-9 )
+
+    cov=cov1[0, mask[:]]
+    cov2=np.array(cov[::-1])
+
+    window=[]
+    for k in range(0,len(cov[:])):
+        window.append(cov2[k])
+    for k in range(1,len(cov[:])):
+        window.append(cov[k])
+
+    np.random.seed(seedValue)
+    unitVarGaussSamples=np.random.normal(0,1,(numberOfSamples+(len(cov)-1)*2))
+    z1=arfilter(unitVarGaussSamples,window)
+    z1=z1.T
 
 
-l=2;
-a=5
-z1=GP.periodicSquaredExponential(0,1,l,a,1000,10,seed1)
-z2=GP.periodicSquaredExponential(3,1,l,a,1000,10,seed2)
-z3=GP.periodicSquaredExponential(6,1,l,a,1000,10,seed3)
-z4=GP.periodicSquaredExponential(9,1,l,a,1000,10,seed4)
-z5=GP.periodicSquaredExponential(12,1,l,a,1000,10,seed5)
+###########################################################################
+# 2. Add noise, with standard deviation that is proportional to the square
+#    root of the mean, to the baseline drift samples.
+###########################################################################
 
-dt = 0.01
-t = np.arange(0, (10+dt), dt)
-plt.xlabel('Input')
-plt.ylabel('Output')
-plt.grid(True)
-plt.title('SE(sin)')
-plt.plot(t,z1,'b',t,z2,'g',t,z3,'k',t,z4,'y',t,z5,'r')
-plt.show()
+    mask=np.abs(z1)
+    average=np.mean(np.abs(z1))
+    mask[mask<average]=1*average
+    sigma=np.sqrt(mask)+ np.abs(np.mean(z1))
 
+    np.random.seed()
+    wn1=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z1_noise=z1+wn1
+    del wn1
+
+    np.random.seed()
+    wn2=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z2_noise=z1+wn2
+    del wn2
+
+    np.random.seed()
+    wn3=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z3_noise=z1+wn3
+    del wn3
+
+    np.random.seed()
+    wn4=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z4_noise=z1+wn4
+    del wn4
+
+    del sigma
+
+
+###########################################################################
+# 3. Calculate the Total noise power per frequency channel
+#    Total power = X_i^2+X_r^2+Y_i^2+Y_r^2
+###########################################################################
+
+    z1_pow=np.power(z1_noise,2)
+    z2_pow=np.power(z2_noise,2)
+    z3_pow=np.power(z3_noise,2)
+    z4_pow=np.power(z4_noise,2)
+
+    z_pow=z1_pow+z2_pow+z3_pow+z4_pow
+    z_pow=z_pow.T
+
+    return z_pow
+
+
+
+
+# out=noise_BaselineDrift(1, 30, 3000, 300, 30000)
+#
+# plt.plot(out)
+# plt.show()
