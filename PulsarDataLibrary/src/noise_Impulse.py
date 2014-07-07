@@ -18,7 +18,7 @@ import gaussianProcessKernels as GP
 def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
 ###########################################################################
 # 1. Generate baseline drift per polarization channel by convolving
-#    an AR function with samples drawn from a unit variance Guassian distribution
+#    a low-pass filter with samples drawn from a unit variance Guassian distribution
 ###########################################################################
     lamda=numberOfSamples/10
     cov1 = GP.squaredExponentialKernel(height, lamda , numberOfSamples, timeDurationOfSimulation)
@@ -95,7 +95,6 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
 
     z_pow=z1_pow+z2_pow+z3_pow+z4_pow
     z_pow=z_pow.T
-
 
 
     return z_pow

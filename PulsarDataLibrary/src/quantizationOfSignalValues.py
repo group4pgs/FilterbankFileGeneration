@@ -8,10 +8,11 @@
 # List of standard libraries that need to be imported
 import numpy as np
 
-import matplotlib.pyplot as plt
-
-from noise_BaseLineDrift import noise_BaseLineDrift
-from noise_Impulse import noise_Impulse
+# import matplotlib.pyplot as plt
+#
+# from noise_BaseLineDrift import noise_BaseLineDrift
+# from noise_Impulse import noise_Impulse
+# from noise_Narrowband import noise_Narrowband
 
 def quantizationOfBaseLineSignal(inputSignal):
 
@@ -44,11 +45,23 @@ def quantizationOfImpulseNoise(height,inputSignal):
 
     outputSignal= inputSignal- np.median(inputSignal)
     maksimum = np.max(outputSignal)
-    outputSignal=outputSignal/maksimum*(4.0*2.4*height)
+    outputSignal=outputSignal/maksimum*(24*height)
 
     average  = np.mean(outputSignal)
 
-    outputSignal = np.uint8(outputSignal -average + 115)
+    outputSignal = np.uint8(outputSignal -average + 125)
+
+    return outputSignal
+
+def quantizationOfNarrowbandNoise(height,inputSignal):
+
+    outputSignal= inputSignal- np.median(inputSignal)
+    maksimum = np.max(outputSignal)
+    outputSignal=outputSignal/maksimum*(24*height)
+
+    average  = np.mean(outputSignal)
+
+    outputSignal = np.uint8(outputSignal -average + 125)
 
     return outputSignal
 

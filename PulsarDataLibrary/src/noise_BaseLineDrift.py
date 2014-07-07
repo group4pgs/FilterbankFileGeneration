@@ -11,6 +11,7 @@ from statsmodels.tsa.filters import arfilter
 import matplotlib.pyplot as plt
 
 
+
 # List of customized libraries that need to be imported
 import gaussianProcessKernels as GP
 
@@ -18,7 +19,7 @@ import gaussianProcessKernels as GP
 def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation, seedValue):
 ###########################################################################
 # 1. Generate baseline drift per polarization channel by convolving
-#    an AR function with samples drawn from a unit variance Guassian distribution
+#    a low-pass filter function with samples drawn from a unit variance Guassian distribution
 ###########################################################################
 
     cov1 = GP.squaredExponentialKernel(height, lamda , numberOfSamples, timeDurationOfSimulation)
@@ -93,7 +94,11 @@ def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation
 
 
 
-# out=noise_BaselineDrift(1, 30, 3000, 300, 30000)
-#
+# out=noise_BaseLineDrift(1, 30, 3000, 300, 400000)
 # plt.plot(out)
 # plt.show()
+
+
+
+
+
