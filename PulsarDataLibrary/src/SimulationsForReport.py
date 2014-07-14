@@ -1,10 +1,10 @@
 #!/usr/bin/python
- 
+
 '''
 # Elmarie van Heerden
 # 17 June 2014
 '''
- 
+
 # List of standard libraries that need to be imported
 from matplotlib.pylab import *
 import matplotlib as mpl
@@ -12,51 +12,51 @@ import numpy as np
 from scipy.signal import  filtfilt, get_window
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
- 
+
 # List of customized libraries that need to be imported
 from noise_BaseLineDrift import noise_BaseLineDrift
 from noise_Impulse import noise_Impulse
 import quantizationOfSignalValues as QZ
- 
- 
- 
+
+
+
 time=300
 samples=3000
 # out=noise_BaseLineDrift(1, 30, samples, time, 400000)
 # out2=QZ.quantizationOfBaseLineSignal(out)
-#  
-#  
+#
+#
 # mu, sigma = 0, 1 # mean and standard deviation
 # s = np.random.normal(mu, sigma, 3000)*24
 # s=s+96
- 
+
 # plt.plot(s,'b')
 # plt.hold(True)
 # plt.plot(out2,'k')
 # plt.ylim((0, 255))
 # plt.show()
- 
- 
+
+
 tsamp=time/3000
 timeDuration=3
 nrOfSamples=np.uint32(timeDuration/tsamp)
- 
+
 # out3=noise_Impulse(1, nrOfSamples,timeDuration, np.random.seed())
 # plt.plot(out3)
 # plt.show()
 # out4=QZ.quantizationOfImpulseNoise(10,out3)
- 
-#  
+
+#
 # mu, sigma = 0, 1 # mean and standard deviation
 # s = np.random.normal(mu, sigma, samples)*24
 # s=s+96
-#  
+#
 # plt.plot(s,'b')
 # plt.hold(True)
 # plt.plot(out4,'k')
 # plt.ylim((0, 255))
 # plt.show()
- 
+
 occurrences=3
 temp=np.uint32(samples/occurrences)
 tsamp=time/3000
@@ -70,20 +70,20 @@ output=[]
 #     temp2=np.random.randint(k*temp,(k+1)*temp)
 #     print(temp2)
 #     out2[temp2:(temp2+nrOfSamples),0]=out4[:,0]
-# 
-# 
+#
+#
 # dt1 = time/3000
 # t1 = np.arange(0, (time), dt1)
- 
+
 # plt.plot(s,'b')
 # plt.hold(True)
 # plt.plot(out2,'k')
 # plt.ylim((0, 255))
 # plt.show()
- 
- 
- 
- 
+
+
+
+
 # plt.xlabel('Time (sec)')
 # plt.ylabel('Total Power')
 # plt.grid(True)
@@ -99,10 +99,10 @@ output=[]
 # plt.ylim(0,255)
 # plt.show()
 # plt.hold(False)
- 
- 
- 
- 
+
+
+
+
 #######################################################################################################################
 ###    Funky print
 #######################################################################################################################
@@ -118,12 +118,12 @@ smooth = lambda x, M: filtfilt(np.ones(M) / M, [1.], x) * edge_window
 nonlin_knee = 1.
 nonlin = lambda y: nonlin_knee * (np.exp(y / nonlin_knee) - 1)
 x = np.arange(N)
- 
- 
+
+
 # The CD cover has 128 pulse traces
- 
-cmap = mpl.cm.get_cmap('gist_rainbow')  ##I set colomap to 'jet' 
-norm = mpl.colors.Normalize(vmin=0, vmax=6.67) 
+
+cmap = mpl.cm.get_cmap('gist_rainbow')  ##I set colomap to 'jet'
+norm = mpl.colors.Normalize(vmin=0, vmax=6.67)
 
 # Make a figure that is exactly the size of a CD cover (12 cm x 12 cm)
 fig = plt.figure(1, figsize=(12 / 2.54, 12 / 2.54))
@@ -132,16 +132,17 @@ fig.clf()
 ax = fig.add_subplot(1, 1, 1)
 
 
-for row in range(16):
+for row in range(1):
+
     out=noise_BaseLineDrift(1, 30, samples, time, 400000)
     out2=QZ.quantizationOfBaseLineSignal(out)
 
     for k in range(0,occurrences-1):
         out3=noise_Impulse(1, nrOfSamples,timeDuration, k)
         out4=QZ.quantizationOfImpulseNoise(8,out3)
-        np.random.seed(k)
+        np.random.seed(500*k)
         temp2=np.random.randint(k*temp,(k+1)*temp)
-        out2[temp2:(temp2+nrOfSamples),0]=out4[:,0]
+        out2[temp2:(temp2+nrOfSamples)]=out4[:]
     if (5 < row < 10):
         k=2
         out3=noise_Impulse(1, nrOfSamples,timeDuration, k)
@@ -149,28 +150,90 @@ for row in range(16):
         np.random.seed(k)
         temp2=np.random.randint(k*temp,(k+1)*temp)
         out2[temp2:(temp2+nrOfSamples),0]=out4[:,0]
-    y=((out2[:,0].T)-np.median(out2[:,0]))/24#*0.02-1.8
-#     y = np.abs(smooth(y, 4))# + smooth(noise1, 4)
-#     y = nonlin(y)
-    for j in range(1,2999):
-        exampleColor = cmap( norm(y[j]))
-        ax.add_patch(Polygon(np.c_[x[j:j+2], 6.67*row + 2 * y[j:j+2]], fc=exampleColor, ec=exampleColor, lw=0.8,closed=False, zorder=-row, alpha=1.0))
-    
-    
-ax.autoscale_view()
-ax.axis('tight')
-# Remove variability of top limit of plot due to peak amplitude of top traces
-y_top = ax.get_ylim()[1]
-ax.set_position([0.285, 0.22, 0.43, 0.56 * y_top / 42.])
-ax.set_ylim(-0.01 * y_top, 1.01 * y_top)
-ax.axis('off')
+#     y=((out2[:,0].T)-np.median(out2[:,0])+5)/24#*0.02-1.8
+# #     y = np.abs(smooth(y, 4))# + smooth(noise1, 4)
+# #     y = nonlin(y)
+#     for j in range(1,2999):
+#         exampleColor = cmap( norm(y[j]))
+#         ax.add_patch(Polygon(np.c_[x[j:j+2], 6.67*row + 2 * y[j:j+2]], fc=exampleColor, ec=exampleColor, lw=0.8,closed=False, zorder=-row, alpha=1.0))
+# 
+# 
+# ax.autoscale_view()
+# ax.axis('tight')
+# # Remove variability of top limit of plot due to peak amplitude of top traces
+# y_top = ax.get_ylim()[1]
+# ax.set_position([0.285, 0.22, 0.43, 0.56 * y_top / 42.])
+# ax.set_ylim(-0.01 * y_top, 1.01 * y_top)
+# ax.axis('off')
+# 
+# cmmapable = mpl.cm.ScalarMappable(norm, cmap)
+# cmmapable.set_array(range(0, 7))
+# c=colorbar(cmmapable,label="Number of standard deviation from expected noise level")
+# 
+# # fig.savefig('unknown_pleasures.pdf', facecolor='k', edgecolor='k')
+# 
+# plt.show()
 
-cmmapable = mpl.cm.ScalarMappable(norm, cmap)
-cmmapable.set_array(range(0, 7))
-c=colorbar(cmmapable,label="Number of standard deviation from expected noise level")
+import statsmodels.tsa.stattools as ts
+print(ts.adfuller(out2))
 
-# fig.savefig('unknown_pleasures.pdf', facecolor='k', edgecolor='k')
 
+
+from numpy import cumsum, log, polyfit, sqrt, std, subtract
+from numpy.random import randn
+
+def hurst(ts):
+    """Returns the Hurst Exponent of the time series vector ts"""
+    # Create the range of lag values
+    lags = range(2, 100)
+
+    # Calculate the array of the variances of the lagged differences
+    tau = [sqrt(std(subtract(ts[lag:], ts[:-lag]))) for lag in lags]
+
+    # Use a linear fit to estimate the Hurst Exponent
+    poly = polyfit(log(lags), log(tau), 1)
+
+    # Return the Hurst exponent from the polyfit output
+    return poly[0]*2.0
+
+# Create a Gometric Brownian Motion, Mean-Reverting and Trending Series
+gbm = log(cumsum(randn(100000))+1000)
+mr = log(randn(100000)+1000)
+tr = log(cumsum(randn(100000)+1)+1000)
+
+# Output the Hurst Exponent for each of the above series
+# and the price of Google (the Adjusted Close price) for
+# the ADF test given above in the article
+print ("Hurst(GBM):   %s" % hurst(gbm))
+print ("Hurst(MR):    %s" % hurst(mr))
+print ("Hurst(TR):    %s" % hurst(tr))
+
+# Assuming you have run the above code to obtain 'goog'!
+print ("Hurst(GOOG):  %s" % hurst(out2))
+
+
+import random
+import matplotlib.pyplot as plt
+xbins=range(0,255)
+
+plt.hist(out2, bins=xbins, color='blue',normed=True)
+
+plt.xlabel('Quantized values of noise samples')
+plt.ylabel('Probability')
+plt.xlim((0,255))
+plt.show()
+
+
+# values = plt.hist(np.random.noncentral_chisquare(4, 96, 3000),
+#                   bins=xbins, normed=True)
+v=np.random.chisquare(4, 3000)
+print(np.mean(v))
+v=v+(96-np.mean(v))
+
+values = plt.hist(v,bins=255, normed=True)
+plt.xlabel('Quantized values of noise samples')
+plt.ylabel('Probability')
+plt.xlim((0,255))
 plt.show()
 
 

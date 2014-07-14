@@ -17,12 +17,12 @@ from noise_BaseLineDrift import noise_BaseLineDrift
 from noise_Impulse import noise_Impulse
 import quantizationOfSignalValues as QZ
 
-def DiagnosticPlot(inputFile):
-    
+def DiagnosticPlot():
+
 #######################################################################################################################
 ###    Extract all of the values from the input file
 #######################################################################################################################
-    
+
 
     time=300
     samples=3000
@@ -33,52 +33,37 @@ def DiagnosticPlot(inputFile):
     nrOfSamples=np.uint32(timeDuration/tsamp)
 
 #######################################################################################################################
-###    Funky print
+###    Image plot
 #######################################################################################################################
-    x = np.arange(samples)
-
-
-    cmap = mpl.cm.get_cmap('gist_rainbow')  ##I set colomap to 'jet'
-    norm = mpl.colors.Normalize(vmin=0, vmax=6.67)
-
-    # Make a figure that is exactly the size of a CD cover (12 cm x 12 cm)
-    fig = plt.figure(1, figsize=(12 / 2.54, 12 / 2.54))
-    fig.patch.set_facecolor('white')
-    fig.clf()
-    ax = fig.add_subplot(1, 1, 1)
-
-
-    for row in range(16):
+    z=[]
+    v = np.linspace(0, 2.0, 15, endpoint=True)
+    for row in range(1024):
         out=noise_BaseLineDrift(1, 30, samples, time, 400000)
         out2=QZ.quantizationOfBaseLineSignal(out)
+#         plt.plot(out2)
+#         plt.show()
 
         for k in range(0,occurrences):
             out3=noise_Impulse(1, nrOfSamples,timeDuration, k)
-            out4=QZ.quantizationOfImpulseNoise(8,out3)
+            out4=QZ.quantizationOfImpulseNoise(3,out3)
             np.random.seed(k)
             temp2=np.random.randint(k*temp,(k+1)*temp)
-            out2[temp2:(temp2+nrOfSamples),0]=out4[:,0]
-        y=((out2[:,0].T)-np.median(out2[:,0]))/24#*0.02-1.8
-        for j in range(1,2999):
-            exampleColor = cmap( norm(y[j]))
-            ax.add_patch(Polygon(np.c_[x[j:j+2], 6.67*row + 2 * y[j:j+2]], fc=exampleColor, ec=exampleColor, lw=0.8,closed=False, zorder=-row, alpha=1.0))
+            out2[temp2:(temp2+nrOfSamples)]=out4[:]
+        y=((out2[:].T))#-np.median(out2[:]))/24#*0.02-1.8
+        z=np.hstack((z,y))
+    z=np.reshape(z, (1024,3000))
+    z=z/255*6.67
+    print(z.shape)
+    plt.imshow(z, vmin=0, vmax=6.67, origin='upper',extent=[0,300,1470,1550])
+    plt.xlabel('Time(sec)')
+    plt.ylabel('Frequency channels (MHz)')
+#     plt.set_xticks(np.arange(0, 10, 0.5))
+#     plt.set_xticklabels(np.arange(0, 10, 0.5))
+    cbar=plt.colorbar()
+    cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
+    plt.show()
+    return 0
 
-
-        ax.autoscale_view()
-        ax.axis('tight')
-        # Remove variability of top limit of plot due to peak amplitude of top traces
-        y_top = ax.get_ylim()[1]
-        ax.set_position([0.285, 0.22, 0.43, 0.56 * y_top / 42.])
-        ax.set_ylim(-0.01 * y_top, 1.01 * y_top)
-        ax.axis('off')
-
-        cmmapable = mpl.cm.ScalarMappable(norm, cmap)
-        cmmapable.set_array(range(0, 7))
-        colorbar(cmmapable,label="Number of standard deviation from expected noise level")
-
-        plt.show()
-
-        return 0
-
+DiagnosticPlot()
 
 

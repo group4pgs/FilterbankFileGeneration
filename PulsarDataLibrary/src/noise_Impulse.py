@@ -7,12 +7,8 @@
 
 # List of standard libraries that need to be imported
 import numpy as np
-from statsmodels.tsa.filters import arfilter
+from scipy.signal import lfilter
 import matplotlib.pyplot as plt
-
-
-# List of customized libraries that need to be imported
-import gaussianProcessKernels as GP
 
 
 def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
@@ -21,14 +17,25 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
 #    a low-pass filter with samples drawn from a unit variance Guassian distribution
 ###########################################################################
     lamda=numberOfSamples/10
-    cov1 = GP.squaredExponentialKernel(height, lamda , numberOfSamples, timeDurationOfSimulation)
-    cov1 = cov1.astype(np.float64, copy=False)
-    cov1 = cov1+np.eye(numberOfSamples)*0.000001
+
+    scalingOfTimeInstances=timeDurationOfSimulation/numberOfSamples
+    row=[]
 
 
-    mask = ( cov1[0,:]  >1e-9 )
+    start=0;
+    for x in range(start,numberOfSamples):
+        temp=start-scalingOfTimeInstances*(x)
+        temp1=np.power((temp/lamda),2)
+        temp2=np.power(height,2)*np.exp(-1*temp1)
+        row.append(temp2)
 
-    cov=cov1[0, mask[:]]
+    cov1 = np.float64(row)
+    cov1[0] = cov1[0]+0.000001
+
+
+    mask = ( cov1[:]  >1e-9 )
+
+    cov=cov1[mask[:]]
     cov2=np.array(cov[::-1])
 
     window=[]
@@ -42,7 +49,8 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
     unitVarGaussSamples1=0.1*np.abs(np.random.normal(0,1,halfOfSamples))
     unitVarGaussSamples2=-0.1*np.abs(np.random.normal(0,1,halfOfSamples))
     GaussSamples=np.concatenate((unitVarGaussSamples1,unitVarGaussSamples2))
-    z1=arfilter(GaussSamples,window)
+    z1=lfilter(window,1,GaussSamples)[len(window)-1::]
+
     z1=z1.T
 
 
@@ -64,7 +72,7 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
     wn1=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
     z1_noise=z1+wn1
     del wn1
-    
+
     np.random.seed()
     wn2=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
     z2_noise=z1+wn2

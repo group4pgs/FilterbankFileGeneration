@@ -16,14 +16,13 @@ import numpy as np
 
 def quantizationOfBaseLineSignal(inputSignal):
 
-    outputSignal= inputSignal- np.median(inputSignal)
-    maksimum = np.max(outputSignal)
-    outputSignal=outputSignal/maksimum*(3.8*24)
-
+#     outputSignal= inputSignal- np.median(inputSignal)
+#     maksimum = np.max(outputSignal)
+#     outputSignal=outputSignal/maksimum*(3.8*24)
+    maksimum = np.max(inputSignal)
+    outputSignal=inputSignal/maksimum*(3.8*24)
     average  = np.mean(outputSignal)
-
     outputSignal = np.uint8(outputSignal -average + 96)
-
     return outputSignal
 
 # out=noise_BaseLineDrift(1, 30, 3000, 300, 9000040)
@@ -49,7 +48,7 @@ def quantizationOfImpulseNoise(height,inputSignal):
 
     average  = np.mean(outputSignal)
 
-    outputSignal = np.uint8(outputSignal -average + 125)
+    outputSignal = np.uint8(outputSignal -average + 115)
 
     return outputSignal
 
@@ -61,7 +60,7 @@ def quantizationOfNarrowbandNoise(height,inputSignal):
 
     average  = np.mean(outputSignal)
 
-    outputSignal = np.uint8(outputSignal -average + 125)
+    outputSignal = np.uint8(outputSignal -average + 115)
 
     return outputSignal
 
