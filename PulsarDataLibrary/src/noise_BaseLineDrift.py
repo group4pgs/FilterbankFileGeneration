@@ -7,11 +7,10 @@
 
 # List of standard libraries that need to be imported
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.signal import lfilter
 
 
-def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation, seedValue):
+def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimulation, seedValue):
 ###########################################################################
 # 1. Generate baseline drift per polarization channel by convolving
 #    a low-pass filter function with samples drawn from a unit variance Guassian distribution
@@ -20,6 +19,7 @@ def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation
 
     scalingOfTimeInstances=timeDurationOfSimulation/numberOfSamples
     row=[]
+    lamda=(scalingOfTimeInstances/(0.01/lamda))
 
 
     start=0;
@@ -47,11 +47,16 @@ def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation
     unitVarGaussSamples=np.random.normal(0,1,(numberOfSamples+(len(cov)-1)*2))
     z1=lfilter(window,1,unitVarGaussSamples)[len(window)-1::]
     z1=z1.T
+    return z1
+
+def noise_BaseLineDriftPower(SmoothBaseLineDriftFunction, numberOfSamples):
+
 
 ###########################################################################
-# 2. Add noise, with standard deviation that is proportional to the square
+# 1. Add noise, with standard deviation that is proportional to the square
 #    root of the mean, to the baseline drift samples.
 ###########################################################################
+    z1=SmoothBaseLineDriftFunction
 
     mask=np.abs(z1)
     average=np.mean(np.abs(z1))
@@ -96,12 +101,6 @@ def noise_BaseLineDrift(height, lamda, numberOfSamples, timeDurationOfSimulation
 
     return z_pow
 
-
-
-
-# out=noise_BaseLineDrift(1, 30, 3000, 300, 400000)
-# plt.plot(out)
-# plt.show()
 
 
 

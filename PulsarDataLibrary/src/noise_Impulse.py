@@ -8,15 +8,13 @@
 # List of standard libraries that need to be imported
 import numpy as np
 from scipy.signal import lfilter
-import matplotlib.pyplot as plt
 
-
-def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
+def noise_ImpulseSmooth(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
 ###########################################################################
 # 1. Generate baseline drift per polarization channel by convolving
 #    a low-pass filter with samples drawn from a unit variance Guassian distribution
 ###########################################################################
-    lamda=numberOfSamples/10
+    lamda=timeDurationOfSimulation#numberOfSamples/10
 
     scalingOfTimeInstances=timeDurationOfSimulation/numberOfSamples
     row=[]
@@ -50,13 +48,16 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
     unitVarGaussSamples2=-0.1*np.abs(np.random.normal(0,1,halfOfSamples))
     GaussSamples=np.concatenate((unitVarGaussSamples1,unitVarGaussSamples2))
     z1=lfilter(window,1,GaussSamples)[len(window)-1::]
-
     z1=z1.T
 
+    return z1
 
 
+def noise_ImpulsePower(SmoothMeanFunction, numberOfSamples):
+
+    z1=SmoothMeanFunction
 ###########################################################################
-# 2. Add noise, with standard deviation that is proportional to the square
+# 1. Add noise, with standard deviation that is proportional to the square
 #    root of the mean, to the baseline drift samples.
 ###########################################################################
 
@@ -108,12 +109,3 @@ def noise_Impulse(height, numberOfSamples ,timeDurationOfSimulation, seedValue):
     return z_pow
 
 
-# tsamp=300/3000
-# timeDuration=3
-# print(tsamp)
-# nrOfSamples=np.uint32(timeDuration/tsamp)
-# print(nrOfSamples)
-# lamda=0
-# out=noise_Impulse(1, nrOfSamples,timeDuration, np.random.seed())
-# plt.plot(out)
-# plt.show()
