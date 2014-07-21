@@ -1,11 +1,11 @@
-B Lambda 3
+B Lambda 0.8
 I Occurrences 3
-I t_start 4,150,200
-I t_end 4.5,155,205
+I t_start 1,3,8
+I t_end 1.5,3.2,8.7
 I Magnitude 5,2,5
 N Occurrences 1
 N F_start 1490
 N F_end 1530
-N t_start 10.7
-N t_end 17.7
+N t_start 5.7
+N t_end 6.7
 N Magnitude 4

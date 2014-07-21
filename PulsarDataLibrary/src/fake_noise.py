@@ -14,6 +14,7 @@ import os.path
 import re
 from scipy import signal
 import time
+from scipy.interpolate import interp1d
 ###########################################################################
 # 2. Include sub-functions.
 ###########################################################################
@@ -110,7 +111,7 @@ if __name__ == '__main__':
 ###########################################################################
     telescope_id    = 4
     nchans          = 1024            #Number of frequency channels across observed band
-    obstime         = 300             #Observation time in seconds
+    obstime         = 10             #Observation time in seconds
     tsamp           = 1000            #Sampling period microseconds
     fch1            = 1550            #Frequency of highest recorded channel in MHz
     foff            = -0.078125       #Bandwidth of each channel as negative value in MHz
@@ -251,8 +252,21 @@ if __name__ == '__main__':
     listOfListsI=[]
     listOfListsN=[]
 
-    out1=noise_BaseLineDriftSmooth(1, lamda, numberOfSamples, obstime, seed)
-    print("Finished generating the smooth baseline drift")
+# Generate the smooth baseline drift
+    out1=noise_BaseLineDriftSmooth(1, lamda, 10000, 100, seed)
+
+    x = np.linspace(0, 10000, 10000)
+    xi = np.linspace(0, 10000, numberOfSamples)
+
+    if (numberOfSamples>=10000):
+        # use linear interpolation method
+        linear = interp1d(x, out1)
+        y = linear(xi)
+
+    else:
+        # use the decimate method
+        y=signal.resample(out1, numberOfSamples)
+
     for m in range(0,np.uint8(I_Occurrences)):
         TimeDuration=(I_tEnd[m]-I_tStart[m])
         nrOfSamplesI=np.floor(TimeDuration/(tsamp*1e-06))
@@ -270,18 +284,38 @@ if __name__ == '__main__':
         out3.clear()
     print("Finished generating the Narrowband noise occurrences")
 
+    f = open(outputFile, 'ab')
     for k in range(0, nchans):
-        print(k)
         print(time.time()-t)
+
         # 10.1 Generate Baseline drift noise
-        out=noise_BaseLineDriftPower(out1, numberOfSamples)
+        out=noise_BaseLineDriftPower(y, numberOfSamples)
         out2=QZ.quantizationOfBaseLineSignal(out)
-        # 10.2 Generate impulse noise
+        del out
+
+        # 10.2 Write the values out to the binary file
+        z2=np.uint8(out2)
+        f.write(bytes(z2))
+        del z2
+    f.close()
+
+    f = open(outputFile, 'rb+')
+    for k in range(0, nchans):
+        print(time.time()-t)
+        outImage=out2
+        # 10.3 Generate impulse noise
         for m in range(0,np.uint8(I_Occurrences)):
             out7=noise_ImpulsePower(listOfListsI[m],np.array(np.shape(listOfListsI[m][0])))
             out4=QZ.quantizationOfImpulseNoise(I_Magnitude[m],out7)
-            out2[np.floor((I_tStart[m])/(tsamp*1e-06)):(np.floor((I_tStart[m])/(tsamp*1e-06))+np.array(np.shape(listOfListsI[m][0])))]=out4[:,0]
-        # 10.3 Generate narrowband noise
+            del out7
+            position=np.uint64((k*numberOfSamples)+np.floor((I_tStart[m])/(tsamp*1e-06)))
+            f.seek(position)
+            z2=np.uint8(out4[:,0])
+#             del out4
+            f.write(bytes(z2))
+            del z2
+            outImage[np.floor((I_tStart[m])/(tsamp*1e-06)):(np.floor((I_tStart[m])/(tsamp*1e-06))+np.array(np.shape(listOfListsI[m][0])))]=out4[:,0]
+        # 10.4 Generate narrowband noise
         for n in range(0,np.uint8(N_Occurrences)):
             diff1=fch1-N_FEnd
             diff2=fch1-N_FStart
@@ -289,20 +323,23 @@ if __name__ == '__main__':
                 print(k)
                 out8=noise_NarrowbandPower(listOfListsN[n],np.array(np.shape(listOfListsN[n][0])))
                 out9=QZ.quantizationOfNarrowbandNoise(N_Magnitude[n],out8)
-                out2[np.floor((N_tStart[n])/(tsamp*1e-06)):(np.floor((N_tStart[n])/(tsamp*1e-06))+np.array(np.shape(listOfListsN[n][0])))]=out9[:,0]
+                del out8
+                position=np.uint64((k*numberOfSamples)+np.floor((N_tStart[n])/(tsamp*1e-06)))
+                f.seek(position)
+                z2=np.uint8(out9[:,0])
+#                 del out9
+                f.write(bytes(z2))
+                del z2
+                outImage[np.floor((N_tStart[n])/(tsamp*1e-06)):(np.floor((N_tStart[n])/(tsamp*1e-06))+np.array(np.shape(listOfListsN[n][0])))]=out9[:,0]
 
-        # 10.4 Generate the diagnostic plot if diagnosticplot=="yes"
+        # 10.5 Generate the diagnostic plot if diagnosticplot=="yes"
         if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-            y=signal.decimate((out2[:].T),3)
-            z=np.hstack((z,y))
-        # 10.5 Write the values out to the binary file
-        f = open(outputFile, 'ab')
-        z2=np.uint8(out2)
-        f.write(bytes(z2))
-        f.close()
+            w=signal.decimate((outImage[:].T),10)
+            z=np.hstack((z,w))
+    f.close()
 
     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-        z=np.reshape(z, (nchans,len(y)))
+        z=np.reshape(z, (nchans,len(w)))
         z=z/255*6.67
         print(z.shape)
         plt.imshow(z, vmin=0, vmax=6.67, origin='upper',extent=[0,obstime,(fch1+nchans*foff),fch1])
@@ -313,17 +350,92 @@ if __name__ == '__main__':
         plt.show()
 
     print(time.time()-t)
-    plt.plot(out2)
-    plt.show()
 
 
 
 
+########################################################################################
+########################################################################################
+########################################################################################
+########################################################################################
+#    out1=noise_BaseLineDriftSmooth(1, lamda, numberOfSamples, obstime, seed)
+#     print("Finished generating the smooth baseline drift")
+#     for m in range(0,np.uint8(I_Occurrences)):
+#         TimeDuration=(I_tEnd[m]-I_tStart[m])
+#         nrOfSamplesI=np.floor(TimeDuration/(tsamp*1e-06))
+#         seedValueForImpulseNoise=np.random.seed()
+#         out3.append(noise_ImpulseSmooth(1, np.uint16(nrOfSamplesI),TimeDuration, seedValueForImpulseNoise))
+#         listOfListsI.append(out3[:])
+#         out3.clear()
+#     print("Finished generating the Impulse noise occurrences")
+#     for n in range(0,np.uint8(N_Occurrences)):
+#         TimeDuration=(N_tEnd[n]-N_tStart[n])
+#         nrOfSamplesN=np.floor(TimeDuration/(tsamp*1e-06))
+#         seedValueForNarrowbandNoise=np.random.seed()
+#         out3.append(noise_NarrowbandSmooth(1, np.uint16(nrOfSamplesN),TimeDuration, seedValueForNarrowbandNoise))
+#         listOfListsN.append(out3[:])
+#         out3.clear()
+#     print("Finished generating the Narrowband noise occurrences")
+#
+#     for k in range(0, nchans):
+# #         print(k)
+# #         print(time.time()-t)
+#         # 10.1 Generate Baseline drift noise
+#         out=noise_BaseLineDriftPower(out1, numberOfSamples)
+#         out2=QZ.quantizationOfBaseLineSignal(out)
+#         # 10.2 Generate impulse noise
+#         for m in range(0,np.uint8(I_Occurrences)):
+#             out7=noise_ImpulsePower(listOfListsI[m],np.array(np.shape(listOfListsI[m][0])))
+#             out4=QZ.quantizationOfImpulseNoise(I_Magnitude[m],out7)
+#             out2[np.floor((I_tStart[m])/(tsamp*1e-06)):(np.floor((I_tStart[m])/(tsamp*1e-06))+np.array(np.shape(listOfListsI[m][0])))]=out4[:,0]
+#         # 10.3 Generate narrowband noise
+#         for n in range(0,np.uint8(N_Occurrences)):
+#             diff1=fch1-N_FEnd
+#             diff2=fch1-N_FStart
+#             if ((np.ceil(diff1/np.abs(foff)) <= k) and( k <= np.floor(diff2/np.abs(foff)))):
+#                 print(k)
+#                 out8=noise_NarrowbandPower(listOfListsN[n],np.array(np.shape(listOfListsN[n][0])))
+#                 out9=QZ.quantizationOfNarrowbandNoise(N_Magnitude[n],out8)
+#                 out2[np.floor((N_tStart[n])/(tsamp*1e-06)):(np.floor((N_tStart[n])/(tsamp*1e-06))+np.array(np.shape(listOfListsN[n][0])))]=out9[:,0]
+#
+#         # 10.4 Generate the diagnostic plot if diagnosticplot=="yes"
+#         if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#             y=signal.decimate((out2[:].T),3)
+#             z=np.hstack((z,y))
+#         # 10.5 Write the values out to the binary file
+#         f = open(outputFile, 'ab')
+#         z2=np.uint8(out2)
+#         f.write(bytes(z2))
+#         f.close()
+#
+#     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#         z=np.reshape(z, (nchans,len(y)))
+#         z=z/255*6.67
+#         print(z.shape)
+#         plt.imshow(z, vmin=0, vmax=6.67, origin='upper',extent=[0,obstime,(fch1+nchans*foff),fch1])
+#         plt.xlabel('Time(sec)')
+#         plt.ylabel('Frequency channels (MHz)')
+#         cbar=plt.colorbar()
+#         cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
+#         plt.show()
 
-
-
-
-
+#     print(time.time()-t)
+#     plt.plot(out1,'r')
+# #     plt.ylim((0,255))
+#
+#
+#     # setup data
+#     x = np.linspace(0, 10000, 10000)
+#     print(np.shape(x))
+#     y = out1
+#     print(np.shape(y))
+#     xi = np.linspace(0, 10000, 1000000)
+#
+#     # use RBF method
+#     rbf = interp1d(x, y)
+#     fi = rbf(xi)
+#     plt.plot(xi, fi, 'g')
+#     plt.show()
 
 
 

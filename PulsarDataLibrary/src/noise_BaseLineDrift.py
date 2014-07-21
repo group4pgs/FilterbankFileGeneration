@@ -19,7 +19,8 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
 
     scalingOfTimeInstances=timeDurationOfSimulation/numberOfSamples
     row=[]
-    lamda=(scalingOfTimeInstances/(0.01/lamda))
+    lamda=lamda*10
+    #lamda=numberOfSamples/100 #(scalingOfTimeInstances/(0.01/lamda))
 
 
     start=0;
@@ -32,7 +33,7 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
     cov1 = np.float64(row)
     cov1[0] = cov1[0]+0.000001
 
-    mask = ( cov1[:]  >1e-9 )
+    mask = ( cov1[:]  >1e-6 )
 
     cov=cov1[mask[:]]
     cov2=np.array(cov[::-1])
@@ -42,6 +43,9 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
         window.append(cov2[k])
     for k in range(1,len(cov[:])):
         window.append(cov[k])
+
+    print(np.shape(window))
+
 
     np.random.seed(seedValue)
     unitVarGaussSamples=np.random.normal(0,1,(numberOfSamples+(len(cov)-1)*2))
