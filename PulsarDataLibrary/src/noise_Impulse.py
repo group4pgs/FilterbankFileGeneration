@@ -65,22 +65,22 @@ def noise_ImpulsePower(SmoothImpulseFunction, sigma, numberOfChannels):
     sigmaFunction=np.ones(numberOfChannels)*sigma
 
     np.random.seed()
-    wn1=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
+    wn1=np.multiply((np.abs(np.random.normal(0,1,numberOfChannels))),sigmaFunction)
     z1_noise=z1+wn1
     del wn1
 
     np.random.seed()
-    wn2=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
+    wn2=np.multiply((np.abs(np.random.normal(0,1,numberOfChannels))),sigmaFunction)
     z2_noise=z1+wn2
     del wn2
 
     np.random.seed()
-    wn3=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
+    wn3=np.multiply((np.abs(np.random.normal(0,1,numberOfChannels))),sigmaFunction)
     z3_noise=z1+wn3
     del wn3
 
     np.random.seed()
-    wn4=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
+    wn4=np.multiply((np.abs(np.random.normal(0,1,numberOfChannels))),sigmaFunction)
     z4_noise=z1+wn4
     del wn4
 

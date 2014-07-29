@@ -21,20 +21,20 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
 
     scalingOfTimeInstances=np.float64(np.float64(timeDurationOfSimulation)/numberOfSamples)
     row=[]
-    lamda=lamda*2
+    lamda=np.float64(lamda*2)
     #lamda=numberOfSamples/100 #(scalingOfTimeInstances/(0.01/lamda))
 
     start=0;
     for x in range(start,numberOfSamples):
-        temp=start-scalingOfTimeInstances*(x)
-        temp1=np.power((temp/lamda),2)
+        temp=np.float64(start-scalingOfTimeInstances*(x))
+        temp1=np.float64(np.power((temp/lamda),2))
         temp2=np.power(height,2)*np.exp(-1*temp1)
         row.append(temp2)
 
     cov1 = np.float64(row)
     cov1[0] = cov1[0]+0.000001
 
-    mask = ( cov1[:]  > 1e-06 )
+    mask = ( cov1[:]  > 1e-05 )
 
     cov=cov1[mask[:]]
     cov2=np.array(cov[::-1])
