@@ -16,7 +16,7 @@ def noise_NarrowbandSmooth(height, numberOfSamples ,timeDurationOfSimulation, se
 ###########################################################################
     lamda=timeDurationOfSimulation #numberOfSamples/10
 
-    scalingOfTimeInstances=timeDurationOfSimulation/numberOfSamples
+    scalingOfTimeInstances=np.float64(np.float64(timeDurationOfSimulation)/numberOfSamples)
     row=[]
 
 
@@ -53,43 +53,37 @@ def noise_NarrowbandSmooth(height, numberOfSamples ,timeDurationOfSimulation, se
     return z1
 
 
-def noise_NarrowbandPower(SmoothMeanFunction, numberOfSamples):
+def noise_NarrowbandPower(SmoothNarrowFunction, sigma, numberOfChannels):
 
-    z1=SmoothMeanFunction
+
 ###########################################################################
 # 1. Add noise, with standard deviation that is proportional to the square
 #    root of the mean, to the baseline drift samples.
 ###########################################################################
+    z1=np.ones(numberOfChannels)*SmoothNarrowFunction
+    sigmaFunction=np.ones(numberOfChannels)*sigma
 
-    mask=np.abs(z1)
-    maksimum=np.max(mask)
-    mask = -1*(mask-maksimum)
-    average=np.abs(np.mean(z1))
-    mask[mask<average]=1*average
-    sigma=np.sqrt(mask) + np.abs(np.mean(z1))
-
-    z1=mask
     np.random.seed()
-    wn1=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    wn1=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
     z1_noise=z1+wn1
     del wn1
 
     np.random.seed()
-    wn2=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    wn2=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
     z2_noise=z1+wn2
     del wn2
 
     np.random.seed()
-    wn3=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    wn3=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
     z3_noise=z1+wn3
     del wn3
 
     np.random.seed()
-    wn4=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    wn4=np.multiply(np.random.normal(0,1,numberOfChannels),sigmaFunction)
     z4_noise=z1+wn4
     del wn4
 
-    del sigma
+    del sigmaFunction
 
 
 ###########################################################################
