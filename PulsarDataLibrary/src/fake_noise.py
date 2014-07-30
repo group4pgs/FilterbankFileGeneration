@@ -123,7 +123,7 @@ if __name__ == '__main__':
     tstart          = 56000.0
     seed            = np.random.seed()  #Sets the seed value for the number generator by using the current time
     source_name     = "FAKE"
-    diagnosticplot  = "No"
+    diagnosticplot  = "Yes"
     outputFile      = "output.fil"
 
     global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
