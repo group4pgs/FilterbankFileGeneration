@@ -123,7 +123,7 @@ if __name__ == '__main__':
     tstart          = 56000.0
     seed            = np.random.seed()  #Sets the seed value for the number generator by using the current time
     source_name     = "FAKE"
-    diagnosticplot  = "Yes"
+    diagnosticplot  = "No"
     outputFile      = "output.fil"
 
     global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
@@ -273,6 +273,7 @@ if __name__ == '__main__':
     listOfListsI=[]
     listOfListsN=[]
     z=np.zeros(nchans).T
+    averagePerSampleChannel=[]
 
 # Generate the smooth baseline drift
     out1=noise_BaseLineDriftSmooth(1, lamda, 10000, 100, seed)
@@ -299,7 +300,6 @@ if __name__ == '__main__':
 
         seedValueForImpulseNoise=np.random.seed()
         out3.append(noise_ImpulseSmooth(1, np.uint16(nrOfSamplesI),TimeDuration, seedValueForImpulseNoise))
-#         out3 = out3 - np.min(out3)
         listOfListsI.append(out3[:])
         del out3
     print("Finished generating the Impulse noise occurrences")
@@ -310,7 +310,6 @@ if __name__ == '__main__':
         seedValueForNarrowbandNoise=np.random.seed()
         out3.append(noise_NarrowbandSmooth(1, np.uint16(nrOfSamplesN),TimeDuration, seedValueForNarrowbandNoise))
 
-#         out3 = out3 - np.min(out3)
         listOfListsN.append(out3[:])
         del out3
     print("Finished generating the Narrowband noise occurrences")
@@ -328,6 +327,8 @@ if __name__ == '__main__':
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
         out2=QZ.quantizationOfBaseLineSignal(out,NormalizationValueBaseline)
+        averagePerSampleChannel.append(np.mean(out2))
+
         del out
 
         # 10.2 Write the values out to the binary file
@@ -361,11 +362,13 @@ if __name__ == '__main__':
             mask[mask<average]=1*average
             sigma=np.sqrt(mask) + np.abs(np.mean(z1))
             z1=mask
-            NormalizationValue=np.power((np.mean(np.abs(z1))+(np.mean(np.abs(sigma))*2.2)),2)*4
+            NormalizationValue=np.power((np.mean(np.abs(z1))+(np.mean(np.abs(sigma))*2.4)),2)*4
             for k in range(0, np.shape(mask)[1]):
 
                 out7=noise_ImpulsePower(z1[0,k],sigma[0,k],nchans)
                 out4=QZ.quantizationOfImpulseNoise(I_Magnitude[m],out7,NormalizationValue)
+
+                out4[out4[:]<averagePerSampleChannel[np.uint64(np.floor((I_tStart[m])/(tsamp)) + k)]]=averagePerSampleChannel[np.uint64(np.floor((I_tStart[m])/(tsamp)) + k)]
                 del out7
 
                 position=np.uint64(258+ np.floor((I_tStart[m])/(tsamp)) + k*nchans )
@@ -379,8 +382,7 @@ if __name__ == '__main__':
                     place=(np.floor((I_tStart[m])/(tsamp)) + k)
                     cut=np.uint64(place-1)
 
-                    z= np.delete(z, np.s_[place], axis=1) # remove columns 0
-                    z = np.insert(z, np.s_[place], out4, axis=1)
+                    z[:,place]=out4
     f.close()
 
 
@@ -402,7 +404,7 @@ if __name__ == '__main__':
             z1=mask
 
 
-            NormalizationValue=np.power((np.mean(np.abs(z1))+(np.mean(np.abs(sigma))*2.2)),2)*4
+            NormalizationValue=np.power((np.mean(np.abs(z1))+(np.mean(np.abs(sigma))*2.4)),2)*4
             for k in range(0, np.shape(mask)[1]):
 
                 diff1=np.ceil((fch1-N_FEnd)/np.abs(foff))
@@ -435,8 +437,7 @@ if __name__ == '__main__':
     print(time.time()-t)
 
     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-        z= np.delete(z, np.s_[0], axis=1) # remove columns 0
-
+        z =np.copy(z[:,1::])
         plt.close('all')
         fig = plt.figure()
         ax1 = plt.subplot2grid((6,6), (0,0), colspan=5, rowspan=5)
@@ -450,27 +451,15 @@ if __name__ == '__main__':
         ax2.set_ylim((0, 255))
         plt.tight_layout()
 
-        number=(len(z)/nchans)
         z=z/255*6.67
         im= ax1.imshow(z, vmin=0, vmax=6.67,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
         ax1.set_xlabel('Time(sec)')
         ax1.set_ylabel('Frequency channels (MHz)')
         cbar=plt.colorbar(im ,cax=ax3)
         cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
-
-
-
-
-
-#
-#
-#
-#         plt.subplot(212)
-#         plt.plot(z[10,:], 'r')
-#         plt.show()
-#
-#         plt.tight_layout()
         plt.show()
+
+
 
 
 

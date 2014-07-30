@@ -12,15 +12,15 @@ def quantizationOfBaseLineSignal(inputSignal, normalizationFactor):
 
     #maksimum = np.max(inputSignal)
     outputSignal=inputSignal/normalizationFactor*(3.8*24)
-    average  = np.min(outputSignal)
-    outputSignal = np.uint8(outputSignal -average + 96)
+    minValue  = np.min(outputSignal)
+    outputSignal = np.uint8(outputSignal -minValue + 96)
     return outputSignal
 
 
 def quantizationOfImpulseNoise(height,inputSignal,normalizationFactor):
 
     #maksimum = np.max(inputSignal)
-    outputSignal=inputSignal/normalizationFactor*(24*height)
+    outputSignal=inputSignal/normalizationFactor*(22*height)
     average  = np.min(outputSignal)
     outputSignal = np.uint8(outputSignal -average + 120)
 
@@ -29,7 +29,7 @@ def quantizationOfImpulseNoise(height,inputSignal,normalizationFactor):
 def quantizationOfNarrowbandNoise(height,inputSignal, normalizationFactor):
 
     #maksimum = np.max(inputSignal)
-    outputSignal=inputSignal/normalizationFactor*(24*height)
+    outputSignal=inputSignal/normalizationFactor*(22*height)
     average  = np.min(outputSignal)
     outputSignal = np.uint8(outputSignal -average + 120)
 
