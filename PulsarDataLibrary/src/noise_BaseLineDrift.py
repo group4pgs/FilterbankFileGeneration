@@ -100,54 +100,54 @@ def noise_BaseLineDriftPower(SmoothBaseLineDriftFunction, sigma, numberOfChannel
 
     return z_pow
 
+def noise_BaseLineDriftPowerPlot(SmoothBaseLineDriftFunction, sigma, numberOfSamples):
+###########################################################################
+# Version 1 of the function above
+###########################################################################
+    z1=SmoothBaseLineDriftFunction
 
-# ###########################################################################
-# # Version 1 of the function above
-# ###########################################################################
-#     z1=SmoothBaseLineDriftFunction
-#
 #     mask=np.abs(z1)
 #     average=np.mean(np.abs(z1))
 #     mask[mask<average]=1*average
 #     sigma=np.sqrt(mask)+ np.abs(np.mean(z1))
-#
-#     np.random.seed()
-#     wn1=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
-#     z1_noise=z1+wn1
-#     del wn1
-#
-#     np.random.seed()
-#     wn2=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
-#     z2_noise=z1+wn2
-#     del wn2
-#
-#     np.random.seed()
-#     wn3=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
-#     z3_noise=z1+wn3
-#     del wn3
-#
-#     np.random.seed()
-#     wn4=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
-#     z4_noise=z1+wn4
-#     del wn4
-#
-#     del sigma
-#
-#
-# ###########################################################################
-# # 3. Calculate the Total noise power per frequency channel
-# #    Total power = X_i^2+X_r^2+Y_i^2+Y_r^2
-# ###########################################################################
-#
-#     z1_pow=np.power(z1_noise,2)
-#     z2_pow=np.power(z2_noise,2)
-#     z3_pow=np.power(z3_noise,2)
-#     z4_pow=np.power(z4_noise,2)
-#
-#     z_pow=z1_pow+z2_pow+z3_pow+z4_pow
-#     z_pow=z_pow.T
-#
-#     return z_pow
+
+    np.random.seed()
+    wn1=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z1_noise=z1+wn1
+    del wn1
+
+    np.random.seed()
+    wn2=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z2_noise=z1+wn2
+    del wn2
+
+    np.random.seed()
+    wn3=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z3_noise=z1+wn3
+    del wn3
+
+    np.random.seed()
+    wn4=np.multiply(np.random.normal(0,1,numberOfSamples),sigma)
+    z4_noise=z1+wn4
+    del wn4
+
+    del sigma
+
+
+###########################################################################
+# 3. Calculate the Total noise power per frequency channel
+#    Total power = X_i^2+X_r^2+Y_i^2+Y_r^2
+###########################################################################
+
+    z1_pow=np.power(z1_noise,2)
+    z2_pow=np.power(z2_noise,2)
+    z3_pow=np.power(z3_noise,2)
+    z4_pow=np.power(z4_noise,2)
+
+    z_pow=z1_pow+z2_pow+z3_pow+z4_pow
+    z_pow=z_pow.T
+
+    return z_pow
 
 
 

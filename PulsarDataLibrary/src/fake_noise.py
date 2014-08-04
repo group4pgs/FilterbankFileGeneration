@@ -12,6 +12,7 @@ from array import array
 import argparse
 import sys
 import os.path
+import os
 import re
 from scipy import signal
 import time
@@ -21,9 +22,9 @@ from scipy.interpolate import interp1d
 ###########################################################################
 
 
-from noise_BaseLineDrift import noise_BaseLineDriftSmooth,noise_BaseLineDriftPower
-from noise_Impulse import noise_ImpulseSmooth,noise_ImpulsePower
-from noise_Narrowband import noise_NarrowbandSmooth,noise_NarrowbandPower
+from noise_BaseLineDrift import noise_BaseLineDriftSmooth,noise_BaseLineDriftPower, noise_BaseLineDriftPowerPlot
+from noise_Impulse import noise_ImpulseSmooth,noise_ImpulsePower,noise_ImpulsePowerPlot
+from noise_Narrowband import noise_NarrowbandSmooth,noise_NarrowbandPower,noise_NarrowbandPowerPlot
 import quantizationOfSignalValues as QZ
 
 ###########################################################################
@@ -44,10 +45,12 @@ def fakenoise_info():
     "   --fch1,-F           Frequency of channel 1, MHz (def=1550.0)\n"\
     "   --foff,-f           Channel bandwidth, MHz (def=-0.078125)\n"\
     "   --nchans,-c         Output number of channels (def=1024)\n"\
+    "   --nbits,-b          Number of bits (8, 16) (def=8)\n"\
     "   --noiseInput,-n     File name: file containing noise specifications\n"\
     "   --seed,-S           Random seed (def=time())\n"\
     "   --name,-s           Source name for header (def=FAKE)\n"\
-    "   --plot,-p           Diagnostic plot (Yes or No) (def=Yes)\n"\
+    "   --plot,-p           Diagnostic plot (Yes/No) (def=Yes)\n"\
+    "   --header,-H         Write header to output file (Yes/No) (def=Yes)\n"\
     "\n"\
     "Default parameters make a HTRU-style data file.\n"\
     "\n");
@@ -70,34 +73,34 @@ def is_valid_file(parser, arg):
 ###########################################################################
 
 def DecipherInputTextFile(inputFile):
-    global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
+    global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude, filename
 
 # Read from a text file the sources of noise
     filename = inputFile
     with open(filename, 'rt') as f:
         for row in f:
             if ('>B' and 'Lambda') in row:
-                lamda = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                lamda = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('I' in row) and ('Occurrence' in row)):
-                I_Occurrences = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                I_Occurrences = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('I' in row) and ('t_start' in row)):
-                I_tStart = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                I_tStart = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('I' in row) and ('t_end' in row)):
-                I_tEnd = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                I_tEnd = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('I' in row) and ('Magnitude' in row)):
-                I_Magnitude = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                I_Magnitude = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('Occurrence' in row)):
-                N_Occurrences = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_Occurrences = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('F_start' in row)):
-                N_FStart = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_FStart = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('F_end' in row)):
-                N_FEnd = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_FEnd = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('t_start' in row)):
-                N_tStart = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_tStart = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('t_end' in row)):
-                N_tEnd = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_tEnd = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
             elif (('N' in row) and ('Magnitude' in row)):
-                N_Magnitude = np.float32(re.findall(r"[-+]?\d*\.\d+|\d+", row))
+                N_Magnitude = np.float64(re.findall(r"[-+]?\d*\.\d+|\d+", row))
 
     return 0
 
@@ -108,15 +111,15 @@ def DecipherInputTextFile(inputFile):
 if __name__ == '__main__':
 
 ###########################################################################
-# 7. Set the default values for generating fake_noise.
+# 6. Set the default values for generating fake_noise.
 ###########################################################################
     telescope_id    = 4
     nchans          = 1024            #Number of frequency channels across observed band
-    obstime         = 10             #Observation time in seconds
-    tsamp           = 10000             #Sampling period microseconds
+    obstime         = 10              #Observation time in seconds
+    tsamp           = 1000           #Sampling period microseconds
     fch1            = 1550            #Frequency of highest recorded channel in MHz
     foff            = -0.078125       #Bandwidth of each channel as negative value in MHz
-    nbits           = 8               #Number of bits {1,2,8,16}
+    nbits           = 8               #Number of bits {8,16}
     nifs            = 1
     nbeams          = 1
     ibeam           = 1
@@ -125,6 +128,7 @@ if __name__ == '__main__':
     source_name     = "FAKE"
     diagnosticplot  = "Yes"
     outputFile      = "output.fil"
+    header          = "Yes"
 
     global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
 
@@ -139,8 +143,13 @@ if __name__ == '__main__':
     N_tStart        =0.0
     N_tEnd          =0.0
     N_Magnitude     =0.0
+
+
+    cut = 0
+    positionHeader = 0
+
 ###########################################################################
-# 8.Parse the arguments passed to fake_noise from the terminal.
+# 7.Parse the arguments passed to fake_noise from the terminal.
 ###########################################################################
 
 
@@ -153,17 +162,18 @@ if __name__ == '__main__':
     parser.add_argument("-F","--fch1", help="Frequency of channel 1, MHz (def=1581.804688)", action="store", type=float )
     parser.add_argument("-f","--foff", help=" Channel bandwidth, MHz (def=-0.390625)", action="store", type=float )
     parser.add_argument("-c","--nchans", help="Output number of channels (def=1024)", type=int)
+    parser.add_argument("-b","--nbits", help="Number of bits (8,16) (def=8)", type=int)
     parser.add_argument("-n","--noiseInput", help="File name: file containing noise specifications",
                         metavar="FILE", type=lambda x: is_valid_file(parser,x))
     parser.add_argument("-S","--seed", help="Random seed (def=time())", action="store", type=float )
     parser.add_argument("-s","--name", help="Source name for header (def=FAKE)", action="store")
     parser.add_argument("-o","--outFile", help="Output file name (def=output.fil)", action="store")
     parser.add_argument("-p","--plot", help="Diagnostic plot (Yes or No) (def=No)", action="store")
+    parser.add_argument("-H","--header", help="Write header to output file (Yes/No) (def=Yes)", action="store")
 
     args = parser.parse_args()
 
     if args.info:
-        parser.print_help()
         fakenoise_info()
         sys.exit(1)
     if args.tobs:
@@ -178,6 +188,8 @@ if __name__ == '__main__':
         foff=args.foff
     if args.nchans:
         nchans=args.nchans
+    if args.nbits:
+        nbits=args.nbits
     if args.seed:
         seed=args.seed
     if args.name:
@@ -186,96 +198,185 @@ if __name__ == '__main__':
         outputFile=args.outFile
     if args.plot:
         diagnosticplot=args.plot
+    if args.header:
+        header=args.plot
 
-###########################################################################
-# 9. Write the Header part of the output file
-###########################################################################
     tsamp=tsamp*1e-06
+###########################################################################
+# 8. Generate a summary of the parameters of the observation
+###########################################################################
+    print
+    print('##################################################################')
+    print('          Parameter values for the simulation:')
+    print('##################################################################')
+    print"\n"\
+    "   tobs        ", obstime          ,"s\n"\
+    "   tsamp       ", tsamp/(1e-06)    ,"us\n"\
+    "   mjd,        ", tstart           ,"\n"\
+    "   fch1        ", fch1             ,"MHz\n"\
+    "   foff        ", foff             ,"MHz\n"\
+    "   nchans      ", nchans           ,"\n"\
+    "   nbits       ", nbits           ,"\n"\
+    "   noiseInput  ", filename         ,"\n"\
+    "   seed        ", seed             ,"\n"\
+    "   name        ", source_name      ,"\n"\
+    "   plot        ", diagnosticplot   ,"\n"\
+    "   header      ", header           ,"\n"\
+    "   outputFile  ", outputFile           ,"\n"\
+    "\n"
+    print('##################################################################')
+    print('          Parameter values from the input file:')
+    print('##################################################################')
+    print"\n"\
+    "   Lambda                    ", lamda          ,"\n\n"\
+    "   Impulse Occurrences       ", I_Occurrences  ,"\n"\
+    "   Impulse t_start           ", I_tStart       ,"\n"\
+    "   Impulse t_end             ", I_tEnd         ,"\n\n"\
+    "   Narrowband Occurrences    ", N_Occurrences  ,"\n"\
+    "   Narrowband F_start        ", N_FStart       ,"MHz\n"\
+    "   Narrowband F_start        ", N_FEnd         ,"MHz\n"\
+    "   Narrowband t_start        ", N_tStart       ,"\n"\
+    "   Narrowband t_end          ", N_tEnd         ,\
+    "\n"
+    print('##################################################################')
 
-    with open(outputFile, 'wb') as f:
-        f.write(struct.pack('<I', 12))
-        unicode_array=array('b',b'HEADER_START')
-        unicode_array.tofile(f)
-        f.write(struct.pack('<I', 11))
-        unicode_array=array('b',b'source_name')
-        unicode_array.tofile(f)
-        f.write(struct.pack('<I', 10))
-        w = bytearray(source_name)
-        unicode_array=array('b',w)
-        unicode_array.tofile(f)
-        f.write(struct.pack('<I', 10))
-        unicode_array=array('b',b'machine_id')
-        unicode_array.tofile(f)
-        f.write(struct.pack('<I', 10))
-        f.write(struct.pack('<I', 12))
-        unicode_array=array('b',b'telescope_id')
-        unicode_array.tofile(f)
-        f.write(struct.pack('<I', telescope_id))
-        f.write(struct.pack('<I', 9))
-        unicode_array=array('b',b'data_type')
-        unicode_array.tofile(f)
-        f.write(struct.pack('<II',1,4))
-        unicode_array=array('b',b'fch1')
-        unicode_array.tofile(f)
-        f.write(struct.pack('d',fch1))
-        f.write(struct.pack('<I', 4))
-        unicode_array=array('b',b'foff')
-        unicode_array.tofile(f)
-        f.write(struct.pack('d', foff))
-        f.write(struct.pack('<I', 6))
-        unicode_array=array('b',b'nchans')
-        unicode_array.tofile(f)
-        f.write(struct.pack('i', nchans))
-        f.write(struct.pack('<I', 5))
-        unicode_array=array('b',b'nbits')
-        unicode_array.tofile(f)
-        f.write(struct.pack('i', nbits))
-        f.write(struct.pack('<I', 6))
-        unicode_array=array('b',b'nbeams')
-        unicode_array.tofile(f)
-        f.write(struct.pack('i', nbeams))
-        f.write(struct.pack('<I', 5))
-        unicode_array=array('b',b'ibeam')
-        unicode_array.tofile(f)
-        f.write(struct.pack('i', ibeam))
-        f.write(struct.pack('<I', 6))
-        unicode_array=array('b',b'tstart')
-        unicode_array.tofile(f)
-        f.write(struct.pack('d', tstart))
-        f.write(struct.pack('<I', 5))
-        unicode_array=array('b',b'tsamp')
-        unicode_array.tofile(f)
-        f.write(struct.pack('d', tsamp))
-        f.write(struct.pack('<I', 4))
-        unicode_array=array('b',b'nifs')
-        unicode_array.tofile(f)
-        f.write(struct.pack('i', nifs))
-        f.write(struct.pack('<I', 6))
-        unicode_array=array('b',b'signed')
-        unicode_array.tofile(f)
-        f.write(struct.pack('B', 1))
-        f.write(struct.pack('<I', 10))
-        unicode_array=array('b',b'HEADER_END')
-        unicode_array.tofile(f)
-        f.close()
+##########################################################################
+# 9. Check that all the parameters are kosher
+###########################################################################
+    if (np.any(I_tStart>=obstime) or np.any(I_tEnd>=obstime)):
+        print('dit wil werk')
+        clear = lambda: os.system('cls')
+        clear()
+        print "\n\n\n"
+        print('##################################################################')
+        print
+        print('ERROR:One of the impulse RFI falls outside the observation time')
+        print
+        print('HINT:Change the start or end time of one of the impulse instances')
+        print
+        print('##################################################################')
+        exit(1)
+    if (np.any(N_tStart>=obstime) or np.any(N_tEnd>=obstime)):
+        clear = lambda: os.system('cls')
+        clear()
+        print "\n\n\n"
+        print('##################################################################')
+        print
+        print('ERROR:One of the narrowband RFI falls outside the observation time')
+        print
+        print('HINT:Change the start or end time of one of the narrowband instances')
+        print
+        print('##################################################################')
+        exit(1)
 
-        print("Finished writing Header to binary file")
+    if (np.any(N_FStart>=(fch1+(foff*nchans))) and np.any(N_FEnd<=foff)):
+        clear = lambda: os.system('cls')
+        clear()
+        print "\n\n\n"
+        print('##################################################################')
+        print
+        print('ERROR:One of the narrowband RFI falls outside the observation time')
+        print
+        print('HINT:Change the start or end Frequency of one of the narrowband instances')
+        print
+        print('##################################################################')
+        exit(1)
+
 
 ###########################################################################
-# 10. Generate Baseline drift noise, Impulse noise and Narrowband noise
+# 10. Write the Header part of the output file
 ###########################################################################
+
+    if ((header=="Yes") or (header=="yes")):
+        positionHeader = 258
+        with open(outputFile, 'wb') as f:
+            f.write(struct.pack('<I', 12))
+            unicode_array=array('b',b'HEADER_START')
+            unicode_array.tofile(f)
+            f.write(struct.pack('<I', 11))
+            unicode_array=array('b',b'source_name')
+            unicode_array.tofile(f)
+            f.write(struct.pack('<I', 10))
+            w = bytearray(source_name)
+            unicode_array=array('b',w)
+            unicode_array.tofile(f)
+            f.write(struct.pack('<I', 10))
+            unicode_array=array('b',b'machine_id')
+            unicode_array.tofile(f)
+            f.write(struct.pack('<I', 10))
+            f.write(struct.pack('<I', 12))
+            unicode_array=array('b',b'telescope_id')
+            unicode_array.tofile(f)
+            f.write(struct.pack('<I', telescope_id))
+            f.write(struct.pack('<I', 9))
+            unicode_array=array('b',b'data_type')
+            unicode_array.tofile(f)
+            f.write(struct.pack('<II',1,4))
+            unicode_array=array('b',b'fch1')
+            unicode_array.tofile(f)
+            f.write(struct.pack('d',fch1))
+            f.write(struct.pack('<I', 4))
+            unicode_array=array('b',b'foff')
+            unicode_array.tofile(f)
+            f.write(struct.pack('d', foff))
+            f.write(struct.pack('<I', 6))
+            unicode_array=array('b',b'nchans')
+            unicode_array.tofile(f)
+            f.write(struct.pack('i', nchans))
+            f.write(struct.pack('<I', 5))
+            unicode_array=array('b',b'nbits')
+            unicode_array.tofile(f)
+            f.write(struct.pack('i', nbits))
+            f.write(struct.pack('<I', 6))
+            unicode_array=array('b',b'nbeams')
+            unicode_array.tofile(f)
+            f.write(struct.pack('i', nbeams))
+            f.write(struct.pack('<I', 5))
+            unicode_array=array('b',b'ibeam')
+            unicode_array.tofile(f)
+            f.write(struct.pack('i', ibeam))
+            f.write(struct.pack('<I', 6))
+            unicode_array=array('b',b'tstart')
+            unicode_array.tofile(f)
+            f.write(struct.pack('d', tstart))
+            f.write(struct.pack('<I', 5))
+            unicode_array=array('b',b'tsamp')
+            unicode_array.tofile(f)
+            f.write(struct.pack('d', tsamp))
+            f.write(struct.pack('<I', 4))
+            unicode_array=array('b',b'nifs')
+            unicode_array.tofile(f)
+            f.write(struct.pack('i', nifs))
+            f.write(struct.pack('<I', 6))
+            unicode_array=array('b',b'signed')
+            unicode_array.tofile(f)
+            f.write(struct.pack('B', 1))
+            f.write(struct.pack('<I', 10))
+            unicode_array=array('b',b'HEADER_END')
+            unicode_array.tofile(f)
+            f.close()
+
+            print("Finished writing Header to binary file")
+
+
+
+##########################################################################
+# 11. Generate Baseline drift noise profile
+###########################################################################
+
     t=time.time()
-    cut=0
 
-
-    numberOfSamples=np.uint32(obstime/(tsamp))
+    numberOfSamples=np.uint64(obstime/(tsamp))
 
     listOfListsI=[]
     listOfListsN=[]
     z=np.zeros(nchans).T
     averagePerSampleChannel=[]
+    diagnosticPlot=[]
 
-# Generate the smooth baseline drift
+    # Generate the smooth baseline drift
+    print
+    print('Start: Smooth baseline drift profile')
     out1=noise_BaseLineDriftSmooth(1, lamda, 10000, 100, seed)
 
     x = np.linspace(0, 10000, 10000)
@@ -286,13 +387,17 @@ if __name__ == '__main__':
         linear = interp1d(x, out1)
         y = linear(xi)
         y = y -np.min(y)
-
     else:
         # use the decimate method
         y=signal.resample(out1, numberOfSamples)
         y = y -np.min(y)
+    print('End: Baseline drift profile')
+    print
+###########################################################################
+# 12. Generate Impulse noise profile(s)
+###########################################################################
 
-
+    print('Start: Impulse noise profile(s)')
     for m in range(0,np.uint8(I_Occurrences)):
         out3=[]
         TimeDuration=np.float64(I_tEnd[m]-I_tStart[m])
@@ -302,7 +407,12 @@ if __name__ == '__main__':
         out3.append(noise_ImpulseSmooth(1, np.uint16(nrOfSamplesI),TimeDuration, seedValueForImpulseNoise))
         listOfListsI.append(out3[:])
         del out3
-    print("Finished generating the Impulse noise occurrences")
+    print('End: Impulse noise profile(s)')
+    print
+###########################################################################
+# 13. Generate Narrowband noise profile(s)
+###########################################################################
+    print('Start: Narrowband noise profile(s)')
     for n in range(0,np.uint8(N_Occurrences)):
         out3=[]
         TimeDuration=(N_tEnd[n]-N_tStart[n])
@@ -312,31 +422,116 @@ if __name__ == '__main__':
 
         listOfListsN.append(out3[:])
         del out3
-    print("Finished generating the Narrowband noise occurrences")
+    print("End: Narrowband noise profile(s)")
+    print
 
-    # Define the function specifying the standard deviation of the noise
+    c=[]
+###########################################################################
+# 14. DIAGNOSTIC PLOT
+###########################################################################
+
+    if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+
+        # Define the function specifying the standard deviation of the noise
+        mask=np.abs(y)
+        average=np.mean(np.abs(y))
+        mask[mask<average]=1*average
+        sigma=np.sqrt(mask)+ np.abs(np.mean(y))
+        del mask
+        del average
+        # 10.1 Generate Baseline drift noise
+        out=noise_BaseLineDriftPowerPlot(y, sigma, numberOfSamples)
+        out2=QZ.quantizationOfBaseLineSignalPlot(out, nbits)
+        del out
+
+        outImage=[]
+        outImage=np.copy(out2)
+
+        for m in range(0,np.uint8(I_Occurrences)):
+            out7=noise_ImpulsePowerPlot(listOfListsI[m],np.array(np.shape(listOfListsI[m][0])))
+            out4=QZ.quantizationOfImpulseNoisePlot(I_Magnitude[m],out7,nbits)
+            del out7
+            outImage[np.floor((I_tStart[m])/(tsamp)):(np.floor((I_tStart[m])/(tsamp))+np.array(np.shape(listOfListsI[m][0])))]=out4[:,0]
+            del out4
+
+        toets=np.copy(outImage)
+
+        for k in range(0, nchans):
+            # 10.4 Generate narrowband noise
+            for n in range(0,np.uint8(N_Occurrences)):
+                diff1=fch1-N_FEnd[n]
+                diff2=fch1-N_FStart[n]
+                if ((np.ceil(diff1/np.abs(foff)) <= k) and ( k <= np.floor(diff2/np.abs(foff)))):
+                    out8=noise_NarrowbandPowerPlot(listOfListsN[n],np.array(np.shape(listOfListsN[n][0])))
+                    out9=QZ.quantizationOfNarrowbandNoisePlot(N_Magnitude[n],out8,nbits)
+                    del out8
+                    outImage[np.floor((N_tStart[n])/(tsamp)):(np.floor((N_tStart[n])/(tsamp))+np.array(np.shape(listOfListsN[n][0])))]=out9[:,0]
+                    del out9
+            c=signal.decimate((outImage[:].T),10)
+            diagnosticPlot=np.hstack((diagnosticPlot,c))
+            del outImage
+            outImage=np.copy(toets)
+
+        plt.close('all')
+        fig = plt.figure()
+        ax1 = plt.subplot2grid((6,6), (0,0), colspan=5, rowspan=5)
+        ax3 = plt.subplot2grid((6,6), (0,5), colspan=1, rowspan=5)
+        ax2 = plt.subplot2grid((6,6), (5,0), colspan=5, rowspan=1)
+        width=np.uint64(len(diagnosticPlot)/nchans)
+        diagnosticPlot=np.reshape(diagnosticPlot, (nchans,width))
+
+        pos=np.uint16(cut)
+        trace=np.copy(diagnosticPlot[pos,:])
+        ax2.plot(np.linspace(0, obstime, width ),trace,'k')
+        ax2.set_xlim((0, obstime))
+        ax2.set_ylim((0, (np.power(2,nbits)-1)))
+        plt.tight_layout()
+
+        diagnosticPlot=diagnosticPlot/(np.power(2,nbits)-1)*6.67
+        im= ax1.imshow(diagnosticPlot, vmin=0, vmax=6.67,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
+        ax1.set_xlabel('Time(sec)')
+        ax1.set_ylabel('Frequency channels (MHz)')
+        cbar=plt.colorbar(im ,cax=ax3)
+        cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
+#     plt.draw()
+        plt.show(block=False)
+
+
+###########################################################################
+# 15. Write the Baseline Drift noise to the output file.
+###########################################################################
+
+    # Define the function specifying the standard deviation of the baseline drift  noise
     mask=np.copy(np.abs(y))
     sigma=(np.sqrt(mask)+ np.abs(np.mean(y)))*1.0
     del mask
 
-
     NormalizationValueBaseline=np.power((np.mean(np.abs(y))+(np.mean(np.abs(sigma))*2.2)),2)*4
-    f = open(outputFile, 'ab')
+
+
+    if ((header=="Yes") or (header=="yes")):
+        f = open(outputFile, 'ab')
+    else:
+        f = open(outputFile, 'wb')
+
     for k in range(0, numberOfSamples):
 
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
-        out2=QZ.quantizationOfBaseLineSignal(out,NormalizationValueBaseline)
+        out2=QZ.quantizationOfBaseLineSignal(out,NormalizationValueBaseline,nbits)
         averagePerSampleChannel.append(np.mean(out2))
 
         del out
 
         # 10.2 Write the values out to the binary file
-        z2=np.uint8(out2)
+        if (nbits==8):
+            z2=np.uint8(out2)
+        else:
+            z2=np.uint16(out2)
         z2.tofile(f)
 
-        if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-            z=np.column_stack((z,z2))
+#         if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#             z=np.column_stack((z,z2))
 
         del z2
     f.close()
@@ -344,10 +539,10 @@ if __name__ == '__main__':
 
     print("Finished generating and writing BaselineDrift to output file.")
 
-    outImage=[]
-    outImage=np.copy(out2)
-    toets=np.copy(out2)
 
+###########################################################################
+# 16. Write the Impulse noise to the output file.
+###########################################################################
 
     f = open(outputFile, 'rb+')
     for m in range(0,np.uint8(I_Occurrences)):
@@ -366,25 +561,30 @@ if __name__ == '__main__':
             for k in range(0, np.shape(mask)[1]):
 
                 out7=noise_ImpulsePower(z1[0,k],sigma[0,k],nchans)
-                out4=QZ.quantizationOfImpulseNoise(I_Magnitude[m],out7,NormalizationValue)
+                out4=QZ.quantizationOfImpulseNoise(I_Magnitude[m],out7,NormalizationValue,nbits)
 
                 out4[out4[:]<averagePerSampleChannel[np.uint64(np.floor((I_tStart[m])/(tsamp)) + k)]]=averagePerSampleChannel[np.uint64(np.floor((I_tStart[m])/(tsamp)) + k)]
                 del out7
 
-                position=np.uint64(258+ np.floor((I_tStart[m])/(tsamp)) + k*nchans )
+                position=np.uint64(positionHeader + (np.floor((I_tStart[m])/(tsamp)) + k)*nchans )
                 f.seek(position)
-                z2=np.uint8(out4[:])
+                if (nbits==8):
+                    z2=np.uint8(out4[:])
+                else:
+                    z2=np.uint16(out4[:])
                 z2.tofile(f)
                 del z2
 
-                # 10.5 Generate the diagnostic plot if diagnosticplot=="yes"
-                if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-                    place=(np.floor((I_tStart[m])/(tsamp)) + k)
-                    cut=np.uint64(place-1)
-
-                    z[:,place]=out4
+#                 # 10.5 Generate the diagnostic plot if diagnosticplot=="yes"
+#                 if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#                     place=(np.floor((I_tStart[m])/(tsamp)) + k)
+#                     cut=np.uint64(place-1)
+#                     z[:,place]=out4
     f.close()
 
+###########################################################################
+# 17. Write the Narrowband noise to the output file.
+###########################################################################
 
     f = open(outputFile, 'rb+')
 
@@ -407,57 +607,52 @@ if __name__ == '__main__':
             NormalizationValue=np.power((np.mean(np.abs(z1))+(np.mean(np.abs(sigma))*2.4)),2)*4
             for k in range(0, np.shape(mask)[1]):
 
-                diff1=np.ceil((fch1-N_FEnd)/np.abs(foff))
-                diff2=np.floor((fch1-N_FStart)/np.abs(foff))
+                diff1=np.ceil((fch1-N_FEnd[m])/np.abs(foff))
+                diff2=np.floor((fch1-N_FStart[m])/np.abs(foff))
                 cut=np.uint64(diff1+2)
                 numberOfchans=diff2-diff1
                 out7=noise_NarrowbandPower(z1[0,k],sigma[0,k],numberOfchans)
-                out4=QZ.quantizationOfNarrowbandNoise(N_Magnitude[m],out7,NormalizationValue)
+                out4=QZ.quantizationOfNarrowbandNoise(N_Magnitude[m],out7,NormalizationValue,nbits)
 
                 del out7
-
-                position=np.uint64(258+ np.floor((I_tStart[m])/(tsamp)) + k*nchans +  diff1)
+                position=np.uint64(positionHeader+ (np.floor((N_tStart[m])/(tsamp)) + k)*nchans +  diff1)
                 f.seek(position)
-                z2=np.uint8(out4[:])
+                if (nbits==8):
+                    z2=np.uint8(out4[:])
+                else:
+                    z2=np.uint16(out4[:])
                 z2.tofile(f)
                 del z2
-                if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-                    placeX=(np.floor((N_tStart[m])/(tsamp)) + k)
-                    placeY=diff1
-                    z[placeY:(placeY+len(out4)), placeX ] = out4
+#                 if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#                     placeX=(np.floor((N_tStart[m])/(tsamp)) + k)
+#                     placeY=diff1
+#                     z[placeY:(placeY+len(out4)), placeX ] = out4
     f.close()
-
-
-
-
-
-
-
-    f.close()
+    plt.show()
     print(time.time()-t)
 
-    if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-        z =np.copy(z[:,1::])
-        plt.close('all')
-        fig = plt.figure()
-        ax1 = plt.subplot2grid((6,6), (0,0), colspan=5, rowspan=5)
-        ax3 = plt.subplot2grid((6,6), (0,5), colspan=1, rowspan=5)
-        ax2 = plt.subplot2grid((6,6), (5,0), colspan=5, rowspan=1)
-
-        pos=np.uint16(cut)
-        trace=np.copy(z[pos,:])
-        ax2.plot(np.linspace(0, 10, numberOfSamples),trace.T,'k')
-        ax2.set_xlim((0, obstime))
-        ax2.set_ylim((0, 255))
-        plt.tight_layout()
-
-        z=z/255*6.67
-        im= ax1.imshow(z, vmin=0, vmax=6.67,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
-        ax1.set_xlabel('Time(sec)')
-        ax1.set_ylabel('Frequency channels (MHz)')
-        cbar=plt.colorbar(im ,cax=ax3)
-        cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
-        plt.show()
+#     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
+#         z =np.copy(z[:,1::])
+#         plt.close('all')
+#         fig = plt.figure()
+#         ax1 = plt.subplot2grid((6,6), (0,0), colspan=5, rowspan=5)
+#         ax3 = plt.subplot2grid((6,6), (0,5), colspan=1, rowspan=5)
+#         ax2 = plt.subplot2grid((6,6), (5,0), colspan=5, rowspan=1)
+#
+#         pos=np.uint16(cut)
+#         trace=np.copy(z[pos,:])
+#         ax2.plot(np.linspace(0, obstime, numberOfSamples),trace.T,'k')
+#         ax2.set_xlim((0, obstime))
+#         ax2.set_ylim((0, 255))
+#         plt.tight_layout()
+#
+#         z=z/255*6.67
+#         im= ax1.imshow(z, vmin=0, vmax=6.67,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
+#         ax1.set_xlabel('Time(sec)')
+#         ax1.set_ylabel('Frequency channels (MHz)')
+#         cbar=plt.colorbar(im ,cax=ax3)
+#         cbar.set_label('$\sigma$ from expected value', rotation=270, labelpad=20, y=0.5)
+#         plt.show()
 
 
 
