@@ -8,12 +8,24 @@
 # List of standard libraries that need to be imported
 import numpy as np
 
-def quantizationOfBaseLineSignal(inputSignal, normalizationFactor, nbits):
+# def quantizationOfBaseLineSignal(inputSignal, normalizationFactor, nbits):
+#
+#     #maksimum = np.max(inputSignal)
+#     outputSignal=inputSignal/normalizationFactor*(3.8*(np.power(2,nbits)*0.09375))
+#     minValue  = np.min(outputSignal)
+#     outputSignal = np.uint16(outputSignal -minValue + (np.power(2,nbits)*0.375))
+#     return outputSignal
+
+def quantizationOfBaseLineSignal(inputSignal, normalizationMax, normalizationMin, nbits):
 
     #maksimum = np.max(inputSignal)
-    outputSignal=inputSignal/normalizationFactor*(3.8*(np.power(2,nbits)*0.09375))
-    minValue  = np.min(outputSignal)
-    outputSignal = np.uint16(outputSignal -minValue + (np.power(2,nbits)*0.375))
+    outputSignal=(inputSignal-normalizationMin)/(normalizationMax-normalizationMin)*144+48
+
+#     inputSignal/normalizationFactor*(3.8*(np.power(2,nbits)*0.09375))
+#     minValue  = np.min(outputSignal)
+#     outputSignal = np.uint16(outputSignal -minValue + (np.power(2,nbits)*0.375))
+
+
     return outputSignal
 
 def quantizationOfBaseLineSignalPlot(inputSignal, nbits):

@@ -45,11 +45,18 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
     for k in range(1,len(cov[:])):
         window.append(cov[k])
 
-
+#     plt.plot(window)
+#     plt.xlabel("Number of samples")
+#     plt.title("Kernel function/window with $\lambda=2$ and $h=1$")
+#     plt.show()
     np.random.seed(seedValue)
     unitVarGaussSamples=np.random.normal(0,1,(numberOfSamples+(len(cov)-1)*2))
     z1=lfilter(window,1,unitVarGaussSamples)[len(window)-1::]
     z1=z1.T
+#     plt.plot(z1)
+#     plt.xlabel("Number of samples")
+#     plt.title("Time-series produced by convolving the kernel function with samples drawn from a unit variance Gaussian")
+#     plt.show()
     return z1
 
 def noise_BaseLineDriftPower(SmoothBaseLineDriftFunction, sigma, numberOfChannels):

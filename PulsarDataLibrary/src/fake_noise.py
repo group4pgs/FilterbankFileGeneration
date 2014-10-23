@@ -49,7 +49,7 @@ def fakenoise_info():
     "   --noiseInput,-n     File name: file containing noise specifications\n"\
     "   --seed,-S           Random seed (def=time())\n"\
     "   --name,-s           Source name for header (def=FAKE)\n"\
-    "   --plot,-p           Diagnostic plot (Yes/No) (def=Yes)\n"\
+    "   --plot,-p           Diagnostic plot (Yes/No) (def=No)\n"\
     "   --header,-H         Write header to output file (Yes/No) (def=Yes)\n"\
     "\n"\
     "Default parameters make a HTRU-style data file.\n"\
@@ -114,7 +114,8 @@ if __name__ == '__main__':
 # 6. Set the default values for generating fake_noise.
 ###########################################################################
     telescope_id    = 4
-    nchans          = 1024            #Number of frequency channels across observed band
+    machine_id      = 10
+    nchans          = 16            #Number of frequency channels across observed band
     obstime         = 10              #Observation time in seconds
     tsamp           = 1000           #Sampling period microseconds
     fch1            = 1550            #Frequency of highest recorded channel in MHz
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     ibeam           = 1
     tstart          = 56000.0
     seed            = np.random.seed()  #Sets the seed value for the number generator by using the current time
-    source_name     = "FAKE"
+    source_name     = "Fake"
     diagnosticplot  = "Yes"
     outputFile      = "output.fil"
     header          = "Yes"
@@ -203,7 +204,7 @@ if __name__ == '__main__':
 
     tsamp=tsamp*1e-06
 ###########################################################################
-# 8. Generate a summary of the parameters of the observation
+# 8. Generate a summary of the parameters of the observation to be printed to the screen
 ###########################################################################
     print
     print('##################################################################')
@@ -244,7 +245,6 @@ if __name__ == '__main__':
 # 9. Check that all the parameters are kosher
 ###########################################################################
     if (np.any(I_tStart>=obstime) or np.any(I_tEnd>=obstime)):
-        print('dit wil werk')
         clear = lambda: os.system('cls')
         clear()
         print "\n\n\n"
@@ -288,42 +288,42 @@ if __name__ == '__main__':
 ###########################################################################
 
     if ((header=="Yes") or (header=="yes")):
-        positionHeader = 258
         with open(outputFile, 'wb') as f:
-            f.write(struct.pack('<I', 12))
+            f.write(struct.pack('<I', len('HEADER_START')))
             unicode_array=array('b',b'HEADER_START')
             unicode_array.tofile(f)
-            f.write(struct.pack('<I', 11))
+            f.write(struct.pack('<I', len('source_name')))
             unicode_array=array('b',b'source_name')
             unicode_array.tofile(f)
-            f.write(struct.pack('<I', 10))
+            f.write(struct.pack('<I', len(source_name)))
+            #formatted_source_name = '%80s' % source_name
             w = bytearray(source_name)
             unicode_array=array('b',w)
             unicode_array.tofile(f)
-            f.write(struct.pack('<I', 10))
+            f.write(struct.pack('<I', len('machine_id')))
             unicode_array=array('b',b'machine_id')
             unicode_array.tofile(f)
-            f.write(struct.pack('<I', 10))
-            f.write(struct.pack('<I', 12))
+            f.write(struct.pack('<I', machine_id))
+            f.write(struct.pack('<I', len('telescope_id')))
             unicode_array=array('b',b'telescope_id')
             unicode_array.tofile(f)
             f.write(struct.pack('<I', telescope_id))
-            f.write(struct.pack('<I', 9))
+            f.write(struct.pack('<I', len('data_type')))
             unicode_array=array('b',b'data_type')
             unicode_array.tofile(f)
-            f.write(struct.pack('<II',1,4))
+            f.write(struct.pack('<II',1,len('fch1')))
             unicode_array=array('b',b'fch1')
             unicode_array.tofile(f)
             f.write(struct.pack('d',fch1))
-            f.write(struct.pack('<I', 4))
+            f.write(struct.pack('<I', len('foff')))
             unicode_array=array('b',b'foff')
             unicode_array.tofile(f)
             f.write(struct.pack('d', foff))
-            f.write(struct.pack('<I', 6))
+            f.write(struct.pack('<I', len('nchans')))
             unicode_array=array('b',b'nchans')
             unicode_array.tofile(f)
             f.write(struct.pack('i', nchans))
-            f.write(struct.pack('<I', 5))
+            f.write(struct.pack('<I', len('nbits')))
             unicode_array=array('b',b'nbits')
             unicode_array.tofile(f)
             f.write(struct.pack('i', nbits))
@@ -355,6 +355,8 @@ if __name__ == '__main__':
             unicode_array=array('b',b'HEADER_END')
             unicode_array.tofile(f)
             f.close()
+            positionHeader = os.path.getsize(outputFile)
+            print(positionHeader)
 
             print("Finished writing Header to binary file")
 
@@ -396,8 +398,8 @@ if __name__ == '__main__':
 ###########################################################################
 # 12. Generate Impulse noise profile(s)
 ###########################################################################
-
-    print('Start: Impulse noise profile(s)')
+    if (np.uint8(I_Occurrences)!=0):
+        print('Start: Impulse noise profile(s)')
     for m in range(0,np.uint8(I_Occurrences)):
         out3=[]
         TimeDuration=np.float64(I_tEnd[m]-I_tStart[m])
@@ -407,12 +409,14 @@ if __name__ == '__main__':
         out3.append(noise_ImpulseSmooth(1, np.uint16(nrOfSamplesI),TimeDuration, seedValueForImpulseNoise))
         listOfListsI.append(out3[:])
         del out3
-    print('End: Impulse noise profile(s)')
+    if (np.uint8(I_Occurrences)!=0):
+        print('End: Impulse noise profile(s)')
     print
 ###########################################################################
 # 13. Generate Narrowband noise profile(s)
 ###########################################################################
-    print('Start: Narrowband noise profile(s)')
+    if (np.uint8(N_Occurrences)!=0):
+        print('Start: Narrowband noise profile(s)')
     for n in range(0,np.uint8(N_Occurrences)):
         out3=[]
         TimeDuration=(N_tEnd[n]-N_tStart[n])
@@ -422,7 +426,8 @@ if __name__ == '__main__':
 
         listOfListsN.append(out3[:])
         del out3
-    print("End: Narrowband noise profile(s)")
+    if (np.uint8(N_Occurrences)!=0):
+        print("End: Narrowband noise profile(s)")
     print
 
     c=[]
@@ -433,15 +438,22 @@ if __name__ == '__main__':
     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
 
         # Define the function specifying the standard deviation of the noise
-        mask=np.abs(y)
-        average=np.mean(np.abs(y))
-        mask[mask<average]=1*average
-        sigma=np.sqrt(mask)+ np.abs(np.mean(y))
-        del mask
-        del average
+
+        minCurve = np.min(y)
+        mask = np.copy(y)
+        y  = y -  minCurve
+        mask = mask - minCurve + 100  # +1 so that sigma is not zero
+        sigma = np.sqrt(mask)
+
+        upperlimit = 4*np.power((np.max(y)+np.max(sigma)*2.5),2)
+        lowerlimit = 4*np.power((1*2.5),2)
+
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPowerPlot(y, sigma, numberOfSamples)
-        out2=QZ.quantizationOfBaseLineSignalPlot(out, nbits)
+        #out2=QZ.quantizationOfBaseLineSignalPlot(out, nbits)
+        out2=QZ.quantizationOfBaseLineSignal(out,upperlimit, lowerlimit ,nbits)
+        plt.plot(out2)
+        plt.show()
         del out
 
         outImage=[]
@@ -467,7 +479,7 @@ if __name__ == '__main__':
                     del out8
                     outImage[np.floor((N_tStart[n])/(tsamp)):(np.floor((N_tStart[n])/(tsamp))+np.array(np.shape(listOfListsN[n][0])))]=out9[:,0]
                     del out9
-            c=signal.decimate((outImage[:].T),10)
+            c=signal.decimate((outImage[:].T),2)
             diagnosticPlot=np.hstack((diagnosticPlot,c))
             del outImage
             outImage=np.copy(toets)
@@ -502,11 +514,20 @@ if __name__ == '__main__':
 ###########################################################################
 
     # Define the function specifying the standard deviation of the baseline drift  noise
-    mask=np.copy(np.abs(y))
-    sigma=(np.sqrt(mask)+ np.abs(np.mean(y)))*1.0
-    del mask
+    minCurve = np.min(y)
+    mask = np.copy(y)
+    y  = y -  minCurve
+    mask = mask - minCurve + 0.2  # +0.2 so that sigma is not zero
+    sigma = np.sqrt(mask)
 
-    NormalizationValueBaseline=np.power((np.mean(np.abs(y))+(np.mean(np.abs(sigma))*2.2)),2)*4
+    upperlimit = 4*np.power((np.max(y)+np.max(y)*2.5),2)
+    lowerlimit = 4*np.power((0.2*2.5),2)
+
+    #mask=np.copy(np.abs(y))
+    #sigma=(np.sqrt(mask)+ np.abs(np.mean(y)))*1.0
+    #del mask
+
+    #NormalizationValueBaseline=np.power((np.mean(np.abs(y))+(np.mean(np.abs(sigma))*2.2)),2)*4
 
 
     if ((header=="Yes") or (header=="yes")):
@@ -518,7 +539,7 @@ if __name__ == '__main__':
 
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
-        out2=QZ.quantizationOfBaseLineSignal(out,NormalizationValueBaseline,nbits)
+        out2=QZ.quantizationOfBaseLineSignal(out,upperlimit, lowerlimit ,nbits)
         averagePerSampleChannel.append(np.mean(out2))
 
         del out
@@ -609,7 +630,7 @@ if __name__ == '__main__':
 
                 diff1=np.ceil((fch1-N_FEnd[m])/np.abs(foff))
                 diff2=np.floor((fch1-N_FStart[m])/np.abs(foff))
-                cut=np.uint64(diff1+2)
+                cut=np.uint64(900)
                 numberOfchans=diff2-diff1
                 out7=noise_NarrowbandPower(z1[0,k],sigma[0,k],numberOfchans)
                 out4=QZ.quantizationOfNarrowbandNoise(N_Magnitude[m],out7,NormalizationValue,nbits)
@@ -657,15 +678,15 @@ if __name__ == '__main__':
 
 
 
-
+#
 #     infile1 = open('temp.fil', 'rb')
-#     infile1.seek(258)
-#     x1 = infile1.read(256)#.decode("utf-8")
-#     infile2 = open('output.fil', 'rb')
-#     infile2.seek(258)
-#     x2 = infile2.read(128)#.decode("utf-8")
-#     for k in range(0,256):
-#         print(struct.unpack('B', x1[k])[0])#,struct.unpack('B', x2[k])[0])
+#     infile1.seek(0)
+#     x1 = infile1.read(258)#.decode("utf-8")
+#     infile2 = open('BLDLambda5.fil', 'rb')
+#     infile2.seek(0)
+#     x2 = infile2.read(258)#.decode("utf-8")
+#     for k in range(0,258):
+#         print(struct.unpack('B', x1[k])[0],struct.unpack('B', x2[k])[0])
 
 #     infile = open('output.fil', 'rb')
 #     outfile = open('output2.fil', 'wb')
