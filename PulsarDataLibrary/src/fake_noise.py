@@ -356,7 +356,6 @@ if __name__ == '__main__':
             unicode_array.tofile(f)
             f.close()
             positionHeader = os.path.getsize(outputFile)
-            print(positionHeader)
 
             print("Finished writing Header to binary file")
 
@@ -438,21 +437,18 @@ if __name__ == '__main__':
     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
 
         # Define the function specifying the standard deviation of the noise
-
-        minCurve = np.min(y)
-        mask = np.copy(y)
-        y  = y -  minCurve
-        mask = mask - minCurve + 100  # +1 so that sigma is not zero
-        sigma = np.sqrt(mask)
-
-        upperlimit = 4*np.power((np.max(y)+np.max(sigma)*2.5),2)
-        lowerlimit = 4*np.power((1*2.5),2)
+        y = (y-np.min(y))/(np.max(y)-np.min(y))*24+72
+        sigma = 3*np.sqrt(y)
 
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPowerPlot(y, sigma, numberOfSamples)
-        #out2=QZ.quantizationOfBaseLineSignalPlot(out, nbits)
-        out2=QZ.quantizationOfBaseLineSignal(out,upperlimit, lowerlimit ,nbits)
-        plt.plot(out2)
+        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
+                
+        t5 = 4*np.power((y+0.3*np.sqrt(y)),2)/(4*np.power(156,2))*256
+        t6 = 96*np.ones(1,numberOfSamples)+np.multiply(np.random.normal(0,1,numberOfSamples),24)
+        plt.plot(t6,'b')
+        plt.plot(out2,'k')
+        plt.plot(t5,'r')
         plt.show()
         del out
 
@@ -514,20 +510,21 @@ if __name__ == '__main__':
 ###########################################################################
 
     # Define the function specifying the standard deviation of the baseline drift  noise
-    minCurve = np.min(y)
-    mask = np.copy(y)
-    y  = y -  minCurve
-    mask = mask - minCurve + 0.2  # +0.2 so that sigma is not zero
-    sigma = np.sqrt(mask)
 
-    upperlimit = 4*np.power((np.max(y)+np.max(y)*2.5),2)
-    lowerlimit = 4*np.power((0.2*2.5),2)
+    y = (y-np.min(y))/(np.max(y)-np.min(y))*24+72
+    sigma = 3*np.sqrt(y)
 
-    #mask=np.copy(np.abs(y))
-    #sigma=(np.sqrt(mask)+ np.abs(np.mean(y)))*1.0
-    #del mask
-
-    #NormalizationValueBaseline=np.power((np.mean(np.abs(y))+(np.mean(np.abs(sigma))*2.2)),2)*4
+#    t1 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+#    t2 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+#    t3 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+#    t4 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+#    t= (t1+t2+t3+t4)/(4*np.power(156,2))*256
+#    t7 = np.array(t, dtype=np.int8)
+#    t5 = 4*np.power((y+0.3*np.sqrt(y)),2)/(4*np.power(156,2))*256
+#    t6 = 96*np.ones(1,numberOfSamples)+np.multiply(np.random.normal(0,1,numberOfSamples),24)
+#    plt.plot(t6,'b')
+#    plt.plot(t,'k')
+#    plt.plot(t5,'r')
 
 
     if ((header=="Yes") or (header=="yes")):
@@ -539,7 +536,7 @@ if __name__ == '__main__':
 
         # 10.1 Generate Baseline drift noise
         out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
-        out2=QZ.quantizationOfBaseLineSignal(out,upperlimit, lowerlimit ,nbits)
+        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
         averagePerSampleChannel.append(np.mean(out2))
 
         del out
@@ -550,9 +547,6 @@ if __name__ == '__main__':
         else:
             z2=np.uint16(out2)
         z2.tofile(f)
-
-#         if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-#             z=np.column_stack((z,z2))
 
         del z2
     f.close()
@@ -596,11 +590,6 @@ if __name__ == '__main__':
                 z2.tofile(f)
                 del z2
 
-#                 # 10.5 Generate the diagnostic plot if diagnosticplot=="yes"
-#                 if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
-#                     place=(np.floor((I_tStart[m])/(tsamp)) + k)
-#                     cut=np.uint64(place-1)
-#                     z[:,place]=out4
     f.close()
 
 ###########################################################################
