@@ -16,16 +16,10 @@ import numpy as np
 #     outputSignal = np.uint16(outputSignal -minValue + (np.power(2,nbits)*0.375))
 #     return outputSignal
 
-def quantizationOfBaseLineSignal(inputSignal, normalizationMax, normalizationMin, nbits):
+def quantizationOfBaseLineSignal(inputSignal, nbits):
 
-    #maksimum = np.max(inputSignal)
-    outputSignal=(inputSignal-normalizationMin)/(normalizationMax-normalizationMin)*144+48
-
-#     inputSignal/normalizationFactor*(3.8*(np.power(2,nbits)*0.09375))
-#     minValue  = np.min(outputSignal)
-#     outputSignal = np.uint16(outputSignal -minValue + (np.power(2,nbits)*0.375))
-
-
+    outputSignal=inputSignal/(4*np.power(156,2))*np.power(2,nbits)
+#    outputSignal = np.array(outputSignal, dtype=np.int8)
     return outputSignal
 
 def quantizationOfBaseLineSignalPlot(inputSignal, nbits):
