@@ -66,6 +66,10 @@ def noise_BaseLineDriftPower(SmoothBaseLineDriftFunction, sigma, numberOfChannel
 # 1. Add noise, with standard deviation that is proportional to the square
 #    root of the mean, to the baseline drift samples.
 ###########################################################################
+
+    
+
+    plt.show()
     z1=np.ones(numberOfChannels)*SmoothBaseLineDriftFunction
     sigmaFunction=np.ones(numberOfChannels)*sigma
 
