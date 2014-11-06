@@ -129,7 +129,7 @@ if __name__ == '__main__':
     source_name     = "Fake"
     diagnosticplot  = "Yes"
     outputFile      = "output.fil"
-    header          = "No"
+    header          = "Yes"
 
     global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
 
