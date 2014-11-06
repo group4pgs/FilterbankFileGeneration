@@ -129,7 +129,7 @@ if __name__ == '__main__':
     source_name     = "Fake"
     diagnosticplot  = "Yes"
     outputFile      = "output.fil"
-    header          = "Yes"
+    header          = "No"
 
     global lamda, I_Occurrences, I_tStart, I_tEnd, I_Magnitude, N_Occurrences, N_FStart, N_FEnd, N_tStart, N_tEnd, N_Magnitude
 
@@ -144,10 +144,8 @@ if __name__ == '__main__':
     N_tStart        =0.0
     N_tEnd          =0.0
     N_Magnitude     =0.0
-
-
-    cut = 0
-    positionHeader = 0
+    cut             = 0
+    positionHeader  = 0
 
 ###########################################################################
 # 7.Parse the arguments passed to fake_noise from the terminal.
@@ -241,7 +239,7 @@ if __name__ == '__main__':
     "\n"
     print('##################################################################')
 
-##########################################################################
+####################################################################if __name__ == '__main__':######
 # 9. Check that all the parameters are kosher
 ###########################################################################
     if (np.any(I_tStart>=obstime) or np.any(I_tEnd>=obstime)):
@@ -410,7 +408,7 @@ if __name__ == '__main__':
         del out3
     if (np.uint8(I_Occurrences)!=0):
         print('End: Impulse noise profile(s)')
-    print
+    
 ###########################################################################
 # 13. Generate Narrowband noise profile(s)
 ###########################################################################
@@ -437,21 +435,29 @@ if __name__ == '__main__':
     if ((diagnosticplot=="Yes") or (diagnosticplot=="yes")):
 
         # Define the function specifying the standard deviation of the noise
-        y = (y-np.min(y))/(np.max(y)-np.min(y))*24+72
-        sigma = 3*np.sqrt(y)
-
+#        y = (y-np.min(y))/(np.max(y)-np.min(y))*24+72
+#        sigma = 2.4*np.sqrt(y)
+        std = np.round(((np.power(2,nbits))/10.67),0)
+        PosiveOffset= 3.5*std
+        y = (y-np.min(y))/(np.max(y)-np.min(y))*std+PosiveOffset
+        sigma = 2.2*np.sqrt(y)
         # 10.1 Generate Baseline drift noise
-        out=noise_BaseLineDriftPowerPlot(y, sigma, numberOfSamples)
-        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
+#        out=noise_BaseLineDriftPowerPlot(y, sigma, numberOfSamples)
+#        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
+        t1 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+        t2 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+        t3 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+        t4 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
+        out2= (t1+t2+t3+t4)/(4*np.power(156,2))*256
                 
-        t5 = 4*np.power((y+0.3*np.sqrt(y)),2)/(4*np.power(156,2))*256
+        t5 = 4*np.power((y+0.15*np.sqrt(y)),2)/(4*np.power(156,2))*256
         t6 = 96*np.ones(1,numberOfSamples)+np.multiply(np.random.normal(0,1,numberOfSamples),24)
         plt.plot(t6,'b')
         plt.plot(out2,'k')
-        plt.plot(t5,'r')
+        plt.plot(t5,"white")
+        plt.title('Power versus time with $\sigma_{noise} = 2.2\sqrt{mean}$')
         plt.show()
-        del out
-
+        
         outImage=[]
         outImage=np.copy(out2)
 
@@ -495,8 +501,8 @@ if __name__ == '__main__':
         ax2.set_ylim((0, (np.power(2,nbits)-1)))
         plt.tight_layout()
 
-        diagnosticPlot=diagnosticPlot/(np.power(2,nbits)-1)*6.67
-        im= ax1.imshow(diagnosticPlot, vmin=0, vmax=6.67,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
+        #diagnosticPlot=diagnosticPlot/(np.power(2,nbits)-1)*6.67
+        im= ax1.imshow(diagnosticPlot, vmin=0, vmax=255,aspect='auto',extent=[0,obstime,(fch1+nchans*foff),fch1])
         ax1.set_xlabel('Time(sec)')
         ax1.set_ylabel('Frequency channels (MHz)')
         cbar=plt.colorbar(im ,cax=ax3)
@@ -508,11 +514,14 @@ if __name__ == '__main__':
 ###########################################################################
 # 15. Write the Baseline Drift noise to the output file.
 ###########################################################################
+    # Determine how much free memory is available:
+    
 
     # Define the function specifying the standard deviation of the baseline drift  noise
-
-    y = (y-np.min(y))/(np.max(y)-np.min(y))*24+72
-    sigma = 3*np.sqrt(y)
+    std = np.round(((np.power(2,nbits))/10.67),0)
+    PosiveOffset= 3.5*std
+    y = (y-np.min(y))/(np.max(y)-np.min(y))*std+PosiveOffset
+    sigma = 2.2*np.sqrt(y)
 
 #    t1 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
 #    t2 = np.power((y + np.multiply(np.random.normal(0,1,numberOfSamples),sigma)),2)
@@ -526,31 +535,39 @@ if __name__ == '__main__':
 #    plt.plot(t,'k')
 #    plt.plot(t5,'r')
 
-
     if ((header=="Yes") or (header=="yes")):
         f = open(outputFile, 'ab')
     else:
         f = open(outputFile, 'wb')
+    
+    np.random.seed()
+    noise= np.random.normal(0,1,(nchans*numberOfSamples*4))
+    Normalize = np.max(y)+(np.sqrt(np.max(y))*2.2*3) 
 
     for k in range(0, numberOfSamples):
 
         # 10.1 Generate Baseline drift noise
-        out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
-        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
-        averagePerSampleChannel.append(np.mean(out2))
-
-        del out
+        z1_noise= sigma[k]*noise[(k*4*nchans):(k*4*nchans+nchans)] + y[k]
+        z2_noise= sigma[k]*noise[(k*4*nchans+nchans):(k*4*nchans+ 2*nchans)] + y[k]
+        z3_noise= sigma[k]*noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)] + y[k]
+        z4_noise= sigma[k]*noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)] + y[k]
+        z_pow=np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2)
+        z_pow=(z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits)
+       
+#        out=noise_BaseLineDriftPower(y[k], sigma[k], nchans)
+#        out2=QZ.quantizationOfBaseLineSignal(out,nbits)
+        averagePerSampleChannel.append(np.mean(z_pow))
 
         # 10.2 Write the values out to the binary file
         if (nbits==8):
-            z2=np.uint8(out2)
+            z2=np.uint8(z_pow)
         else:
-            z2=np.uint16(out2)
+            z2=np.uint16(z_pow)
         z2.tofile(f)
 
         del z2
     f.close()
-
+    #print(z_pow)
 
     print("Finished generating and writing BaselineDrift to output file.")
 
