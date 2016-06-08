@@ -16,15 +16,60 @@ import os
 import re
 from scipy import signal
 import time
+from scipy.signal import lfilter
 from scipy.interpolate import interp1d
 ###########################################################################
 # 2. Include sub-functions.
 ###########################################################################
 
+def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimulation, seedValue):
+###########################################################################
+# 1. Generate baseline drift per polarization channel by convolving
+#    a low-pass filter function with samples drawn from a unit variance Guassian distribution
+###########################################################################
 
-from noise_BaseLineDrift import noise_BaseLineDriftSmooth
-from noise_Impulse import noise_ImpulsePowerPlot
-from noise_Narrowband import noise_NarrowbandPowerPlot
+    scalingOfTimeInstances=np.float64(np.float64(timeDurationOfSimulation)/numberOfSamples)
+    row=[]
+    lamda=np.float64(lamda)
+    #lamda=numberOfSamples/100 #(scalingOfTimeInstances/(0.01/lamda))
+    stopCriteria = np.int64(np.sqrt(np.log(1e-03)*-1)*lamda/scalingOfTimeInstances)
+    start=0;
+    for x in range(start,stopCriteria):
+        temp=np.float64(start-scalingOfTimeInstances*(x))
+        temp1=np.float64(np.power((temp/lamda),2))
+        temp2=np.power(height,2)*np.exp(-1*temp1)
+        row.append(temp2)
+
+    cov1 = np.float64(row)
+    cov1[0] = cov1[0]+0.000001
+
+    mask = ( cov1[:]  > 1e-03 )
+
+    cov=cov1[mask[:]]
+    cov2=np.array(cov[::-1])
+
+    window=[]
+    for k in range(0,len(cov[:])):
+        window.append(cov2[k])
+    for k in range(1,len(cov[:])):
+        window.append(cov[k])
+    print('Finished creating the smoothing kernel:'+str(len(window))+'')
+#     plt.plot(window)
+#     plt.xlabel("Number of samples")
+#     plt.title("Kernel function/window with $\lambda=2$ and $h=1$")
+#     plt.show()
+    np.random.seed(seedValue)
+    print('Number of Gaussian samples:'+str((numberOfSamples+(len(cov)-1)*2))+'')
+    unitVarGaussSamples=np.random.normal(0,1,(numberOfSamples+(len(cov)-1)*2))
+    print('Finished drawing samples from Normal Distribution')
+    z1=lfilter(window,1,unitVarGaussSamples)[len(window)-1::]
+    z1=z1.T
+    print('Finished the convolution of the kernel with the random samples')
+#     plt.plot(z1)
+#     plt.xlabel("Number of samples")
+#     plt.title("Time-series produced by convolving the kernel function with samples drawn from a unit variance Gaussian")
+#     plt.show()
+    return z1
 
 ###########################################################################
 # 3. Help function -- how to set the variables in the arguments list.
@@ -125,7 +170,7 @@ if __name__ == '__main__':
     nbeams          = 1
     ibeam           = 1
     tstart          = 56000.0
-    seedValue	    = np.uint64(np.random.randint(100000,size=1))
+    seedValue       = np.uint64(np.random.randint(100000,size=1))
     source_name     = "Fake"
     diagnosticplot  = "No"
     outputFile      = "output.fil"
@@ -369,9 +414,9 @@ if __name__ == '__main__':
         mbits=32
     else:
         mbits=nbits
-        
+
     t=time.time()
-    
+
     numberOfSamples=np.uint64(obstime/(tsamp))
 
     listOfListsI=[]
@@ -392,13 +437,28 @@ if __name__ == '__main__':
         y = y -np.min(y)
 
 	'''
-        seedValue=np.int64(time.time()/10000000)
-        out1=noise_BaseLineDriftSmooth(1, lamda, 10000, 100, seedValue)
-    
+        if (lamda <= 5.0 ):
+            seedValue=np.int64(time.time()/10000000)
+            out1=noise_BaseLineDriftSmooth(1, lamda, numberOfSamples, obstime, seedValue)
+            y = out1-np.min(out1)
+            print('End: Baseline drift profile')
+        else:
+            print('Lambda is greater than 5s')
+            seedValue=np.int64(time.time()/10000000)
+            out1=noise_BaseLineDriftSmooth(1, lamda/4, numberOfSamples/4, obstime/4, seedValue)
+            x = np.linspace(0, obstime,numberOfSamples/4)
+
+            xi = np.linspace(0, obstime, numberOfSamples)
+
+            linear = interp1d(x, out1)
+            y = linear(xi)
+            y = y -np.min(y)
+            print('End: Baseline drift profile')
+
         x = np.linspace(0, 10000, 10000)
-    
+
         xi = np.linspace(0, 10000, numberOfSamples)
-    
+
         if (numberOfSamples>=10000):
             # use linear interpolation method
             linear = interp1d(x, out1)
@@ -408,18 +468,17 @@ if __name__ == '__main__':
             # use the decimate method
             y=signal.resample(out1, numberOfSamples)
             y = y -np.min(y)
-        print('End: Baseline drift profile')
         '''
-        
+
         std = np.round(((np.power(2,nbits))/21.34),0)
         PosiveOffset= 3.5*std
         dynamicRangeOfY=std/np.sqrt(nchans)/5*4.0
         y = (y-np.min(y))/(np.max(y)-np.min(y))*dynamicRangeOfY+PosiveOffset-dynamicRangeOfY/2
-        Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.1)  
+        Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.1)
     else:
         seedValue=np.uint64(np.random.randint(100000,size=1))
         std = np.round(((np.power(2,nbits))/21.34),0)
-        PosiveOffset= 3.5*std 
+        PosiveOffset= 3.5*std
         dynamicRangeOfY=std/np.sqrt(nchans)/5*4.0
         y=np.ones(numberOfSamples)*(PosiveOffset) # + 0.5*dynamicRangeOfY)
         Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.1)
@@ -591,7 +650,7 @@ if __name__ == '__main__':
         f = open(outputFile, 'ab')
     else:
         f = open(outputFile, 'wb')
-    
+
     seedValue=np.uint64(np.random.randint(100000,size=1))
     np.random.seed(seedValue)
     noise= np.random.normal(0,1,(nchans*numberOfSamples*4))
@@ -603,8 +662,8 @@ if __name__ == '__main__':
             z3_noise= np.multiply(np.sqrt(sigma[:,k]),noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)]) + (y[:,k]).reshape((1,nchans))
             z4_noise= np.multiply(np.sqrt(sigma[:,k]),noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,k]).reshape((1,nchans))
             z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
-            z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))              
-        
+            z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
+
             # 10.2 Write the values out to the binary file
             if (mbits==8):
                 z2=np.uint8(z_pow)
@@ -626,8 +685,8 @@ if __name__ == '__main__':
             z3_noise= (np.sqrt(sigma[k])*noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)] + y[k])
             z4_noise= (np.sqrt(sigma[k])*noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)] + y[k])
             z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
-            z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))              
-        
+            z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
+
             # 10.2 Write the values out to the binary file
             if (mbits==8):
                 z2=np.uint8(z_pow)
