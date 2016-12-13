@@ -7,16 +7,15 @@ SIGPROC is a pulsar search processing software: See the documentation at http://
 How to compile .cpp file
 =========================
 
-
-
+g++ -std=c++11 RFI_Clipper_Modified.cpp -o RFI_Clipper_Modified
 
 
 How to use
 ==================
-1. Download and compile the function/.
+1. Download and compile the function.
 
-
-2.
+2. Call the function as follows:
+./RFI_Clipper_Modified -inputFile "SNInject.fil" -outputFile "SNInject_normalised.fil"  
 
 
 
