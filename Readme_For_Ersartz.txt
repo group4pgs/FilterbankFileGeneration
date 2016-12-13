@@ -19,7 +19,7 @@ Matplotlib
 
 How to use
 ==================
-1. Download the python project from the github repository at https://github.com/EllieVanH/Pulsars.git
+1. Download the python project from the github repository at https://github.com/EllieVanH/PulsarDetectionLibrary.git
 
 2. Create an input text file having the exact layout as shown between the starred border (The values may be customised to suit individual scenarios):
 ***************************
@@ -37,9 +37,9 @@ N Magnitude 3
 ****************************
 
 where:
-’B’ precedes the variables associated with the baseline drift noise
-’I’ precedes the variables associated with impulse RFI
-’N’ precedes the variables associated with narrowband RFI
+â€™Bâ€™ precedes the variables associated with the baseline drift noise
+â€™Iâ€™ precedes the variables associated with impulse RFI
+â€™Nâ€™ precedes the variables associated with narrowband RFI
 
 Furthermore:
 Lambda - Regularity of upward baseline drifts during an observatoin (Lambda should lie between 1 and 10, 
@@ -53,7 +53,7 @@ F_end - Ending frequency affected by RFI artefact (MHz)
 t_start - The start time of the RFI artefact (s)
 t_end - The end time of the RFI artefact (s)
 
-NB. If any of the noise phenomena should be ignored just set the ’Occurrences’ variable to zero.
+NB. If any of the noise phenomena should be ignored just set the â€™Occurrencesâ€™ variable to zero.
 
 3. In the terminal/command prompt go to the direcotry where the following pyhton files are saved: 
 fake_noise.py
