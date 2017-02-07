@@ -62,14 +62,14 @@ Baseline 	        Precedes the variables associated with the non-stationary base
 Broadband 	        Precedes the variables associated with impulse RFI.
 Narrowband 	        Precedes the variables associated with narrowband RFI.
 Bandpass 	        Precedes the variables associated with giving the bandpass a shape.
-Baseline Lambda    Non-stationary baseline correlation length in seconds.
-Baseline Amplitude Amplitude of the non-stationary noise (0< value ≤ 6).
+Baseline Lambda         Non-stationary baseline correlation length in seconds.
+Baseline Amplitude      Amplitude of the non-stationary noise (0< value ≤ 6).
 Occurrences         Number of RFI instances.
 t_start 	        The start time of the RFI instances ( s )
-t_end  	        The end time of the RFI instances  ( s )
+t_end               The end time of the RFI instances  ( s )
 Magnitude 	        The magnitude of the noise i.t.o. the number of standard deviations from  
                     the expected value (0< value ≤ 6).
-F_start   	        First frequency affected by RFI artefact (MHz)
+F_start             First frequency affected by RFI artefact (MHz)
 F_end 	        Ending frequency affected by RFI artefact (MHz)
 Period 	        Period of the periodic noise (s)
 Duty cycle 	        Specify how long the RFI should be 'on' as a percentage of its period (0<value<99)
