@@ -70,12 +70,12 @@ t_end               The end time of the RFI instances  ( s )
 Magnitude 	        The magnitude of the noise i.t.o. the number of standard deviations from  
                     the expected value (0< value ≤ 6).
 F_start             First frequency affected by RFI artefact (MHz)
-F_end 	        Ending frequency affected by RFI artefact (MHz)
-Period 	        Period of the periodic noise (s)
+F_end 	            Ending frequency affected by RFI artefact (MHz)
+Period 	            Period of the periodic noise (s)
 Duty cycle 	        Specify how long the RFI should be 'on' as a percentage of its period (0<value<99)
 Ramp-up  	        Specify the protion of highest frequency channels to be modulated (0<value<1).
 Ramp-down 	        Specify the portion of lowest frequency channels to be modulated (0<value<1).
-Amplitude 	        Specifies the height of the slope (<0value<1).
+Amplitude 	        Specifies the height of the slope (0<value<1).
 
 
 NB. If any of the noise phenomena should be ignored just set the 'Occurrences' variable to zero.
