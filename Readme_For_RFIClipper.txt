@@ -7,7 +7,7 @@ SIGPROC is a pulsar search processing software: See the documentation at http://
 How to compile .cpp file
 =========================
 
-g++ -std=c++11 RFI_Clipper_Modified.cpp -o RFI_Clipper_Modified
+g++ -std=c++11 RFIClipperWithNormalization_Stable.cpp -o RFIClipperWithNormalization_Stable -lfftw3 -lm
 
 
 How to use
@@ -15,7 +15,7 @@ How to use
 1. Download and compile the function.
 
 2. Call the function as follows:
-./RFI_Clipper_Modified -inputFile "SNInject.fil" -outputFile "SNInject_normalised.fil"  
+./RFIClipperWithNormalization_Stable -inputFile "SNInject.fil" -outputFile "SNInject_normalised.fil"  
 
 
 
