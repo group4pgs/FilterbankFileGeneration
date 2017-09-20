@@ -17,23 +17,24 @@ from scipy import signal
 import time
 from scipy.signal import lfilter
 from scipy.interpolate import interp1d
+import ctypes
 ###########################################################################
 # 2. Include sub-functions.
 ###########################################################################
-## This class determines what the available memory is for the function 
+## This class determines what the available memory is for the function
 ## to run optimally
 class memoryCheck():
     """Checks memory of a given system"""
- 
+
     def __init__(self):
- 
+
         if os.name == "posix":
             self.value = self.linuxRam()
         elif os.name == "nt":
             self.value = self.windowsRam()
         else:
             print "I only work with Win or Linux :P"
- 
+
     def windowsRam(self):
         """Uses Windows API to check RAM in this OS"""
         kernel32 = ctypes.windll.kernel32
@@ -52,9 +53,9 @@ class memoryCheck():
         memoryStatus = MEMORYSTATUS()
         memoryStatus.dwLength = ctypes.sizeof(MEMORYSTATUS)
         kernel32.GlobalMemoryStatus(ctypes.byref(memoryStatus))
- 
+
         return int(memoryStatus.dwAvailPhys/1024**2)
- 
+
     def linuxRam(self):
         """Returns the RAM of a linux system"""
         totalMemory = os.popen("free -m").readlines()[1].split()[6]
@@ -257,7 +258,7 @@ def DecipherInputTextFile(inputFile):
         placesbStart_n= np.concatenate((placesbStart_n,np.ones(Instances_n)*P_N_FStart[idx]), axis =0)
         placesbEnd_n= np.concatenate((placesbEnd_n,np.ones(Instances_n)*P_N_FEnd[idx]), axis =0)
         amp_n= np.concatenate((amp_n,np.ones(Instances_n)*P_N_Magnitude[idx]), axis =0)
-    
+
 
     N_tStart = np.concatenate((N_tStart,places1_n_start ), axis=0)
     N_tEnd = np.concatenate((N_tEnd,places1_n_end ), axis=0)
@@ -372,7 +373,7 @@ if __name__ == '__main__':
         bandPass_shape = 1
 
 
-
+    NumberOfLoops =1
     tsamp=tsamp*1e-06
 ###########################################################################
 # 10. Generate a summary of the parameters of the observation to be printed to the screen
@@ -453,16 +454,17 @@ if __name__ == '__main__':
         print('##################################################################')
         exit(1)
 # ###########################################################################
-# # 12. Determine the available memory that can be used by this function 
-# #     such that it doesn't deplete all the resources. 
+# # 12. Determine the available memory that can be used by this function
+# #     such that it doesn't deplete all the resources.
 # ###########################################################################
-    M = memoryCheck()
-    MemoryAvailable = M.value*1e6*0.7    # 1e6 converts the availble memory from Mbytes to bytes
-                                         # 0.7 limits the memory used to 70% of the available memory  
-    MemoryNeeded    = obstime/tsamp*nchans*4*5   # 5 is the four polarizations + baseline
-                                                 # 4 is the number of bytes per value i.e. np.float32 
-    NumberOfLoops   = np.int64(np.ceil(MemoryNeeded/MemoryAvailable))
-     
+
+#    M = memoryCheck()
+#    MemoryAvailable = M.value*1e6*0.7    # 1e6 converts the availble memory from Mbytes to bytes
+#                                         # 0.7 limits the memory used to 70% of the available memory
+#    MemoryNeeded    = obstime/tsamp*nchans*4*5   # 5 is the four polarizations + baseline
+#                                                 # 4 is the number of bytes per value i.e. np.float32
+#    NumberOfLoops   = np.int64(np.ceil(MemoryNeeded/MemoryAvailable))
+
 
 ###########################################################################
 # 13. Write the Header part of the output file
@@ -560,7 +562,7 @@ if __name__ == '__main__':
     # Generate the smooth baseline drift
     print('Start: Smooth baseline drift profile')
     if (stationary=='No'):
-        seedValue=np.uint32(np.random.randint(100000))
+        seedValue=10 #np.uint32(np.random.randint(100000))
         points = obstime/(lamda*2/10)
         out1=noise_BaseLineDriftSmooth(1, lamda, points , obstime , seedValue)
         x = np.linspace(0, obstime,points)
@@ -569,19 +571,30 @@ if __name__ == '__main__':
         y = linear(xi)
         y = y -np.min(y)
 
-        std = np.round(((np.power(2,nbits))/21.34),0)
-        PosiveOffset= 3.5*std
-        dynamicRangeOfY=std/np.sqrt(nchans)/5*amplitude
+        # std = np.round(((np.power(2,nbits))/25.6),0)
+        # PosiveOffset= 3.5*std
+        # dynamicRangeOfY=std/np.sqrt(nchans)*amplitude
+        # y = (y-np.min(y))/(np.max(y)-np.min(y))*dynamicRangeOfY+PosiveOffset-dynamicRangeOfY/2
+        # Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.0)
+        std = np.round(((np.power(2,nbits))/10.0),0)
+        PosiveOffset= 3*std
+        dynamicRangeOfY=2*std/np.sqrt(nchans)*amplitude
         y = (y-np.min(y))/(np.max(y)-np.min(y))*dynamicRangeOfY+PosiveOffset-dynamicRangeOfY/2
-        Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.1)
+        Normalize = 4*std+(np.sqrt(4*std)*1.0*3.0)
     else:
         seedValue=np.uint32(np.random.randint(100000))
-        std = np.round(((np.power(2,nbits))/21.34),0)
-        PosiveOffset= 3.5*std
-        dynamicRangeOfY=std/np.sqrt(nchans)/5*amplitude
+        std = np.round(((np.power(2,nbits))/10.0),0)
+        PosiveOffset= 3*std
+        dynamicRangeOfY=2*std/np.sqrt(nchans)*amplitude
         y=np.ones(numberOfSamples)*(PosiveOffset) # + 0.5*dynamicRangeOfY)
-        Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.1)
+        Normalize = 4*std+(np.sqrt(4*std)*1.0*3.0)
         print('End: Baseline drift profile')
+        # seedValue=np.uint32(np.random.randint(100000))
+        # std = np.round(((np.power(2,nbits))/25.6),0)
+        # dynamicRangeOfY=std/np.sqrt(nchans)*amplitude
+        # y=np.ones(numberOfSamples)*(PosiveOffset) # + 0.5*dynamicRangeOfY)
+        # Normalize = np.max(y)+(np.sqrt(np.max(y))*1.0*3.0)
+        # print('End: Baseline drift profile')
 ###########################################################################
 # 15. Generate Impulse noise profile(s)
 ###########################################################################
@@ -591,18 +604,18 @@ if __name__ == '__main__':
 #        y1=np.exp(-np.power(x1,2)/2)/np.sqrt(2*np.pi)/0.4
 #        del x1
     for m in range(0,np.uint32(I_Occurrences)):
-        
+
         TimeDuration=np.float32(I_tEnd[m]-I_tStart[m])
-        nrOfSamplesI=np.floor(TimeDuration/(tsamp))
-        out3=I_Magnitude[m]*np.ones(nrOfSamplesI)#np.sqrt(PosiveOffset)*signal.resample(y1,nrOfSamplesI)
+        nrOfSamplesI=np.uint32(np.floor(TimeDuration/(tsamp)))
+        out3=np.sqrt(std)*I_Magnitude[m]*np.ones(nrOfSamplesI) #np.sqrt(PosiveOffset)*signal.resample(y1,nrOfSamplesI)
         location=np.uint32(np.round(I_tStart[m]/tsamp))
         y[location:(location+nrOfSamplesI)]=y[location:(location+nrOfSamplesI)]+out3[:]
         del out3
     if (np.uint32(I_Occurrences)!=0):
         print('End: Impulse noise profile(s)')
-    
- 
-    
+
+
+
 ###########################################################################
 # 16. Generate Narrowband noise profile(s)
 ###########################################################################
@@ -617,26 +630,25 @@ if __name__ == '__main__':
     for n in range(0,np.uint32(N_Occurrences)):
         firstchannel=int((fch1-N_FEnd[n])/np.abs(foff))
         channelsaffected=np.abs(int((N_FEnd[n]-N_FStart[n])/np.abs(foff)))
-
-        x1=np.arange(1,(np.ceil(channelsaffected/2.0+1)))     
-        x2=np.power(x1,(-1/np.sqrt(channelsaffected)))
-        if np.mod(channelsaffected,2)==0:
-            y1=np.concatenate((x2[::-1],x2[:]),axis=1)
-        else:
-            y1=np.concatenate((x2[:-1],x2[:]),axis=1)
-
-        del x1,x2
+        y1 = np.ones(channelsaffected)
+        # x1=np.arange(1,(np.ceil(channelsaffected/2.0+1)))
+        # x2=np.power(x1,(-1/np.sqrt(channelsaffected)))
+        # if np.mod(channelsaffected,2)==0:
+        #     y1=np.concatenate((x2[:],x2[::-1]))
+        # else:
+        #     y1=np.concatenate((x2[1::],x2[::-1]))
+        # del x1,x2
         TimeDuration=np.float32(N_tEnd[n]-N_tStart[n])
-        nrOfSamplesI=np.floor(TimeDuration/(tsamp))
-        out3=N_Magnitude[n]*np.ones(nrOfSamplesI)#*np.sqrt(PosiveOffset)*signal.resample(y1,nrOfSamplesI)
+        nrOfSamplesI=np.uint32(np.floor(TimeDuration/(tsamp)))
+        out3=np.sqrt(std)*N_Magnitude[n]*np.ones(nrOfSamplesI) #*np.sqrt(PosiveOffset)*signal.resample(y1,nrOfSamplesI)
         location=np.uint32(np.round(N_tStart[n]/tsamp))
+
         for indx in range(0,channelsaffected):
             #y[firstchannel:(firstchannel+channelsaffected),location:(location+nrOfSamplesI)]=y[firstchannel:(firstchannel+channelsaffected),location:(location+nrOfSamplesI)]+out3[:]
             y[(firstchannel+indx),location:(location+nrOfSamplesI)]=y[(firstchannel+indx),location:(location+nrOfSamplesI)]+out3[:]*y1[indx]
-        del out3
+        del out3, y1
     if (np.uint32(N_Occurrences)!=0):
         print("End: Narrowband noise profile(s)")
-    print
 
     c=[]
 
@@ -658,7 +670,7 @@ if __name__ == '__main__':
 
         numberOfChannelsInRampDown = int(np.floor(nchans*bandPass_rampDown))
         for teller in range(-numberOfChannelsInRampDown,0):
-            bandPass[512+teller] = (1-bandPass_amplitude)+np.abs(teller)*0.5/numberOfChannelsInRampDown;
+            bandPass[nchans+teller] = (1-bandPass_amplitude)+np.abs(teller)*bandPass_amplitude/numberOfChannelsInRampDown;
 
     if ((header=="Yes") or (header=="yes")):
         f = open(outputFile, 'ab')
@@ -679,16 +691,18 @@ if __name__ == '__main__':
             if (np.uint32(N_Occurrences)!=0):
                 for k in range(0, NumberOfSamplesPerLoop):
                     idx = NumberOfSamplesPerLoop*loop+k
-                    z1_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans):(k*4*nchans+nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z2_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+nchans):(k*4*nchans+ 2*nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z3_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z4_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,idx]).reshape((1,nchans))
+                    z1_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans):(k*4*nchans+nchans)]) + (y[:,idx])
+                    z2_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+nchans):(k*4*nchans+ 2*nchans)]) + (y[:,idx])
+                    z3_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)]) + (y[:,idx])
+                    z4_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,idx])
                     z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
                     z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
                     z_pow=np.multiply(z_pow,bandPass)
 
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -713,6 +727,8 @@ if __name__ == '__main__':
 
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -723,7 +739,7 @@ if __name__ == '__main__':
                     else:
                         z2=array('f',list(z_pow))
                         z2.tofile(f)
-                        del z2            
+                        del z2
         elif ((loop<NumberOfLoops-1) and (NumberOfSamplesRemaining>0)):
             seedValue=np.uint32(np.random.randint(100000,size=1))
             np.random.seed(seedValue)
@@ -731,15 +747,17 @@ if __name__ == '__main__':
             if (np.uint32(N_Occurrences)!=0):
                 for k in range(0, NumberOfSamplesPerLoop):
                     idx = NumberOfSamplesPerLoop*loop+k
-                    z1_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans):(k*4*nchans+nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z2_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+nchans):(k*4*nchans+ 2*nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z3_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)]) + (y[:,idx]).reshape((1,nchans))
-                    z4_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,idx]).reshape((1,nchans))
+                    z1_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans):(k*4*nchans+nchans)]) + (y[:,idx])
+                    z2_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+nchans):(k*4*nchans+ 2*nchans)]) + (y[:,idx])
+                    z3_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 2*nchans):(k*4*nchans+ 3*nchans)]) + (y[:,idx])
+                    z4_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,idx])
                     z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
                     z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
                     z_pow=np.multiply(z_pow,bandPass)
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -760,10 +778,12 @@ if __name__ == '__main__':
                     z4_noise= (sigma[idx]*noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)] + y[idx])
                     z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
                     z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
-                    z_pow=np.multiply(z_pow,bandPass)                    
+                    z_pow=np.multiply(z_pow,bandPass)
 
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;                        
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -774,7 +794,7 @@ if __name__ == '__main__':
                     else:
                         z2=array('f',list(z_pow))
                         z2.tofile(f)
-                        del z2            
+                        del z2
         else:
             seedValue=np.uint32(np.random.randint(100000,size=1))
             np.random.seed(seedValue)
@@ -788,10 +808,12 @@ if __name__ == '__main__':
                     z4_noise= np.multiply(sigma[:,idx],noise[(k*4*nchans+ 3*nchans):(k*4*nchans+ 4*nchans)]) + (y[:,idx]).reshape((1,nchans))
                     z_pow=(np.power(z1_noise,2)+np.power(z2_noise,2)+np.power(z3_noise,2)+np.power(z4_noise,2))
                     z_pow=np.float32((z_pow.T)/(4*np.power((Normalize),2))*np.power(2,nbits))
-                    z_pow=np.multiply(z_pow,bandPass)                    
+                    z_pow=np.multiply(z_pow,bandPass)
 
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;                        
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -815,6 +837,8 @@ if __name__ == '__main__':
                     z_pow=np.multiply(z_pow,bandPass)
                     # 10.2 Write the values out to the binary file
                     if (mbits==8):
+                        z_pow= (z_pow + abs(z_pow)) / 2;
+                        z_pow = (z_pow + 255 - abs(z_pow - 255)) / 2;                        
                         z2=np.uint8(z_pow)
                         z2.tofile(f)
                         del z2
@@ -825,10 +849,10 @@ if __name__ == '__main__':
                     else:
                         z2=array('f',list(z_pow))
                         z2.tofile(f)
-                        del z2            
+                        del z2
 
 
-     
+
 
     f.close()
 
