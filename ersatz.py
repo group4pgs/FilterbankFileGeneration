@@ -33,7 +33,7 @@ class memoryCheck():
         elif os.name == "nt":
             self.value = self.windowsRam()
         else:
-            print "I only work with Win or Linux :P"
+            print("I only work with Win or Linux :P")
 
     def windowsRam(self):
         """Uses Windows API to check RAM in this OS"""
@@ -69,15 +69,22 @@ def noise_BaseLineDriftSmooth(height, lamda, numberOfSamples, timeDurationOfSimu
 ###########################################################################
 
     scalingOfTimeInstances=np.float32(np.float32(timeDurationOfSimulation)/numberOfSamples)
-    row=[]
+    #row=[]
     lamda=np.float32(lamda)
     stopCriteria = np.int64(np.sqrt(np.log(1e-03)*-1)*lamda/scalingOfTimeInstances)
-    start=0;
-    for x in range(start,stopCriteria):
-        temp=np.float32(start-scalingOfTimeInstances*(x))
-        temp1=np.float32(np.power((temp/lamda),2))
-        temp2=np.power(height,2)*np.exp(-1*temp1)
-        row.append(temp2)
+    start=0
+
+    x = np.arange(start,stopCriteria,dtype=np.float32)
+#    temp = start-scalingOfTimeInstances*x
+#    temp1 = np.power((temp/lamda),2)
+#    temp2 = np.power(height,2)*np.exp(-1*temp1)
+    row = np.power(height,2)*np.exp(-1*np.power((start-scalingOfTimeInstances*x/lamda),2))
+
+#    for x in range(start,stopCriteria):
+#        temp=np.float32(start-scalingOfTimeInstances*(x))
+#        temp1=np.float32(np.power((temp/lamda),2))
+#        temp2=np.power(height,2)*np.exp(-1*temp1)
+#        row.append(temp2)
 
     cov1 = np.float32(row)
     cov1[0] = cov1[0]+0.000001
@@ -138,10 +145,11 @@ def fakenoise_info():
 ###########################################################################
 
 def is_valid_file(parser, arg):
-    if not os.path.exists(arg):
-        parser.error("The file %s does not exist!"%arg)
-    else:
-        return DecipherInputTextFile(arg)
+    ###if not os.path.exists(arg):
+    ###    parser.error("The file %s does not exist!"%arg)
+    #else:
+    ###    return DecipherInputTextFile(arg)
+    return DecipherInputTextFile(arg)
 
 
 
@@ -226,7 +234,7 @@ def DecipherInputTextFile(inputFile):
     places1_b_start=[]
     places1_b_end = []
     amp_b = []
-    for idx in range(0,P_B_Occurrences):
+    for idx in range(0,int(P_B_Occurrences)):
         # Generate broadband periodic RFI
         period_b = P_B_Period[idx]
         deltaTinTime_b = (period_b)/100*P_B_DutyCycle[idx]
@@ -247,11 +255,11 @@ def DecipherInputTextFile(inputFile):
     placesbEnd_n = []
     amp_n = []
 
-    for idx in range(0,P_N_Occurrences):
+    for idx in range(0,int(P_N_Occurrences)):
         # Generate narrowband periodic RFI
         period_n = P_N_Period[idx]
         deltaTinTime_n = (period_n)/100*P_N_DutyCycle[idx]
-        Instances_n= int(np.floor((P_N_tEnd[idx]-P_N_tStart[idx])/(period_n)))
+        Instances_n= int(np.nan_to_num(np.floor((P_N_tEnd[idx]-P_N_tStart[idx])/(period_n))))
         N_Occurrences = N_Occurrences + Instances_n
         places1_n_start = np.concatenate((places1_n_start,np.arange(0,Instances_n)*(period_n)+P_N_tStart[idx]), axis=0)
         places1_n_end = np.concatenate((places1_n_end,(np.arange(0,Instances_n)*(period_n)+P_N_tStart[idx]+deltaTinTime_n)), axis=0)
@@ -332,7 +340,7 @@ if __name__ == '__main__':
     parser.add_argument("-c","--nchans", help="Output number of channels (def=16)", type=int)
     parser.add_argument("-b","--nbits", help="Number of bits (8,16,32) (def=8)", type=int)
     parser.add_argument("-n","--noiseInput", help="File name: file containing nDroise specifications",
-                        metavar="FILE", type=lambda x: is_valid_file(parser,x))
+                        metavar="FILE", type=str)
     parser.add_argument("-S","--seed", help="Random seed (def=time())", action="store", type=float )
     parser.add_argument("-s","--name", help="Source name for header (def=FAKE)", action="store")
     parser.add_argument("-o","--outFile", help="Output file name (def=output.fil)", action="store")
@@ -371,6 +379,9 @@ if __name__ == '__main__':
         stationary=args.stationary
     if args.bandPass:
         bandPass_shape = 1
+    if args.noiseInput:
+        filename = args.noiseInput
+        DecipherInputTextFile(filename)
 
 
     NumberOfLoops =1
@@ -382,35 +393,35 @@ if __name__ == '__main__':
     print('##################################################################')
     print('          Parameter values for the simulation:')
     print('##################################################################')
-    print"\n"\
-    "   tobs        ", obstime          ,"s\n"\
-    "   tsamp       ", tsamp/(1e-06)    ,"us\n"\
-    "   mjd,        ", tstart           ,"\n"\
-    "   fch1        ", fch1             ,"MHz\n"\
-    "   foff        ", foff             ,"MHz\n"\
-    "   nchans      ", nchans           ,"\n"\
-    "   nbits       ", nbits           ,"\n"\
-    "   noiseInput  ", filename         ,"\n"\
-    "   seed        ", seedValue        ,"\n"\
-    "   name        ", source_name      ,"\n"\
-    "   header      ", header           ,"\n"\
-    "   outputFile  ", outputFile           ,"\n"\
-    "\n"
+    print("\n\n",
+    "   tobs        ", obstime          ,"s\n",
+    "   tsamp       ", tsamp/(1e-06)    ,"us\n",
+    "   mjd,        ", tstart           ,"\n",
+    "   fch1        ", fch1             ,"MHz\n",
+    "   foff        ", foff             ,"MHz\n",
+    "   nchans      ", nchans           ,"\n",
+    "   nbits       ", nbits           ,"\n",
+    "   noiseInput  ", filename         ,"\n",
+    "   seed        ", seedValue        ,"\n",
+    "   name        ", source_name      ,"\n",
+    "   header      ", header           ,"\n",
+    "   outputFile  ", outputFile           ,"\n",
+    "\n")
     print('##################################################################')
     print('          Parameter values from the input file:')
     print('##################################################################')
-    print"\n"\
-    "   Lambda                    ", lamda          ,"\n\n"\
-    "   Amplitude                 ", amplitude      ,"\n"\
-    "   Impulse Occurrences       ", I_Occurrences  ,"\n"\
-    "   Impulse t_start           ", I_tStart       ,"\n"\
-    "   Impulse t_end             ", I_tEnd         ,"\n\n"\
-    "   Narrowband Occurrences    ", N_Occurrences  ,"\n"\
-    "   Narrowband F_start        ", N_FStart       ,"MHz\n"\
-    "   Narrowband F_end          ", N_FEnd         ,"MHz\n"\
-    "   Narrowband t_start        ", N_tStart       ,"\n"\
-    "   Narrowband t_end          ", N_tEnd         ,\
-    "\n"
+    print("\n",
+    "   Lambda                    ", lamda          ,"\n\n",
+    "   Amplitude                 ", amplitude      ,"\n",
+    "   Impulse Occurrences       ", I_Occurrences  ,"\n",
+    "   Impulse t_start           ", I_tStart       ,"\n",
+    "   Impulse t_end             ", I_tEnd         ,"\n\n",
+    "   Narrowband Occurrences    ", N_Occurrences  ,"\n",
+    "   Narrowband F_start        ", N_FStart       ,"MHz\n",
+    "   Narrowband F_end          ", N_FEnd         ,"MHz\n",
+    "   Narrowband t_start        ", N_tStart       ,"\n",
+    "   Narrowband t_end          ", N_tEnd         ,
+    "\n")
     print('##################################################################')
 
 ####################################################################if __name__ == '__main__':######
@@ -419,7 +430,7 @@ if __name__ == '__main__':
     if (np.any(I_tStart>=obstime) or np.any(I_tEnd>obstime)):
         clear = lambda: os.system('clear')
         clear()
-        print "\n\n\n"
+        print("\n\n\n")
         print('##################################################################')
         print
         print('ERROR:One of the impulse RFI falls outside the observation time')
@@ -431,7 +442,7 @@ if __name__ == '__main__':
     if (np.any(N_tStart>=obstime) or np.any(N_tEnd>obstime)):
         clear = lambda: os.system('clear')
         clear()
-        print "\n\n\n"
+        print("\n\n\n")
         print('##################################################################')
         print
         print('ERROR:One of the narrowband RFI falls outside the observation time')
@@ -444,7 +455,7 @@ if __name__ == '__main__':
     if (np.any(N_FStart>=(fch1+(foff*nchans))) and np.any(N_FEnd<=foff)):
         clear = lambda: os.system('clear')
         clear()
-        print "\n\n\n"
+        print("\n\n\n")
         print('##################################################################')
         print
         print('ERROR:One of the narrowband RFI falls outside the observation time')
@@ -480,7 +491,7 @@ if __name__ == '__main__':
             unicode_array.tofile(f)
             f.write(struct.pack('<I', len(source_name)))
             #formatted_source_name = '%80s' % source_name
-            w = bytearray(source_name)
+            w = bytearray(source_name,encoding='utf8')
             unicode_array=array('b',w)
             unicode_array.tofile(f)
             f.write(struct.pack('<I', len('machine_id')))
@@ -603,7 +614,7 @@ if __name__ == '__main__':
 #        x1=np.arange(-3,3.000072,0.001)
 #        y1=np.exp(-np.power(x1,2)/2)/np.sqrt(2*np.pi)/0.4
 #        del x1
-    for m in range(0,np.uint32(I_Occurrences)):
+    for m in range(0,int(I_Occurrences)):
 
         TimeDuration=np.float32(I_tEnd[m]-I_tStart[m])
         nrOfSamplesI=np.uint32(np.floor(TimeDuration/(tsamp)))
@@ -627,7 +638,7 @@ if __name__ == '__main__':
         y2=np.multiply(y,np.ones(nchans).reshape((nchans,1)))
         del y
         y=y2
-    for n in range(0,np.uint32(N_Occurrences)):
+    for n in range(0,int(N_Occurrences)):
         firstchannel=int((fch1-N_FEnd[n])/np.abs(foff))
         channelsaffected=np.abs(int((N_FEnd[n]-N_FStart[n])/np.abs(foff)))
         y1 = np.ones(channelsaffected)

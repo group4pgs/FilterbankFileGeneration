@@ -1,0 +1,46 @@
+##Coments
+
+Basline Lambda 2
+Baseline Amplitude 4
+
+##Define Broadband Noise below. 
+# Set Occurrences to 1 if you want to start.
+# Magnitude: The magnitude of the noise i.t.o. the number of standard deviations from the expected value (0< value ≤ 6).
+# t_startand t_end: The start time and end time of the RFI instances ( s )
+Broadband Occurrences 1
+Broadband t_start 0.01
+Broadband t_end 0.02
+Broadband Magnitude 5
+
+# Define Narrowband Noise below
+# Set Occurrences to 1 if you want to start.
+# Magnitude: The magnitude of the noise i.t.o. the number of standard deviations from the expected value (0< value ≤ 6).
+# t_startand t_end: The start time and end time of the RFI instances ( s )
+# F_start and F_end: Start and End Frequency ( MHz ) **Make sure that the --fch1 & --nchans & --foff (Channel BW) would be sufficient**
+Narrowband Occurrences 1
+Narrowband F_start 1490
+Narrowband F_end 1492
+Narrowband t_start 0.2
+Narrowband t_end 1
+Narrowband Magnitude 4
+
+# Same as mentioned above just include some Period Parameters
+# Period of the periodic noise (s)
+# Specify how long the RFI should be 'on' as a percentage of its period (0<value<99)
+Periodic Broadband Occurrences 0
+Periodic Broadband Period 0
+Periodic Broadband Duty cycle 0
+Periodic Broadband t_start 0
+Periodic Broadband t_end 0
+Periodic Broadband Magnitude 0
+Periodic Narrowband Occurrences 1
+Periodic Narrowband Period 0.05
+Periodic Narrowband Duty cycle 20
+Periodic Narrowband F_start 1510
+Periodic Narrowband F_end 1511
+Periodic Narrowband t_start 0
+Periodic Narrowband t_end 1
+Periodic Narrowband Magnitude 5
+BandPass ramp-up 0.3
+BandPass ramp-down 0.2
+BandPass Amplitude 0.5
