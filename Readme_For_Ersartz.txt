@@ -83,7 +83,7 @@ NB. For the bandpass shape to be enforced the flag '"--bandPass" should be set w
 
 
 4. To see how to run the code, type the following in the terminal/command prompt:
->> python fake_noise.py --info
+>> python ersatz.py --info
 
 5. An example of how to run the code then type the following in the terminal/command prompt, the output will be written to the output file called 'output.fil':
 >> python ersatz.py --tobs 20.0 --tsamp 64 --fch1 1536 --foff -0.62890625 --nchans 512 --nbits 8 --noiseInput FakeNoiseParameters.txt --stationary "No" --bandPass
