@@ -33,12 +33,13 @@ Periodic Broadband Duty cycle 0
 Periodic Broadband t_start 0
 Periodic Broadband t_end 0
 Periodic Broadband Magnitude 0
+
 Periodic Narrowband Occurrences 1
 Periodic Narrowband Period 0.05
-Periodic Narrowband Duty cycle 20
+Periodic Narrowband Duty cycle 70
 Periodic Narrowband F_start 1510
 Periodic Narrowband F_end 1511
-Periodic Narrowband t_start 0
+Periodic Narrowband t_start 0.3
 Periodic Narrowband t_end 1
 Periodic Narrowband Magnitude 5
 BandPass ramp-up 0.3
