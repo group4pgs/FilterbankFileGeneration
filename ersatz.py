@@ -323,6 +323,7 @@ if __name__ == '__main__':
     N_Magnitude     =0.0
     cut             = 0
     positionHeader  = 0
+    background      = True
 
 ###########################################################################
 # 9.Parse the arguments passed to fake_noise from the terminal.
@@ -347,6 +348,7 @@ if __name__ == '__main__':
     parser.add_argument("-H","--header", help="Write header to output file (Yes/No) (def=Yes)", action="store")
     parser.add_argument("-y","--stationary", help="Produce stationary noise (Yes/No) (def=Yes)", action="store")
     parser.add_argument("-p", "--bandPass", help="Bandpass should have a shape",action="store_true")
+    parser.add_argument("-z","--background", help="Setting this to FALSE would remove background gaussian noise",type=bool,default=True)
 
     args = parser.parse_args()
 
@@ -670,8 +672,12 @@ if __name__ == '__main__':
     # Define the function specifying the standard deviation of the baseline drift  noise
 
     sigma=y
-    sigma = np.sqrt(sigma)
+    if background:
+        sigma = np.sqrt(sigma)
+    else:
+        sigma = np.zeros((sigma.shape),type=int)
     bandPass = np.ones((nchans))
+    ##### Trying to make the background without any gaussian noise: NOT WORKING RIGHT NOW
 
     if (bandPass_shape):
         print('The bandPass has the shape specified in the noiseInput file')
