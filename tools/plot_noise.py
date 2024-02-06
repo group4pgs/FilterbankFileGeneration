@@ -11,7 +11,7 @@ start_data = 0
 
 parser = argparse.ArgumentParser(description='Plotting the filterbank')
 
-parser.add_argument('-i','--input', type=str, help='Input Fitlerbank File',required=True)
+parser.add_argument('input', type=str, help='Input Fitlerbank File')
 parser.add_argument('-s','--start', type=int, help='Start of the timeseries',default=0)
 parser.add_argument('-e','--end',type=int, help='End of timeseries (sample number [-1 for entire file])',default=-1)
 args = parser.parse_args()
