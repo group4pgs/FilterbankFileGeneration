@@ -24,12 +24,20 @@ if args.end:
     end_data = args.end
 
 fil = FilReader(filname)
-Pretty(fil.header)
+y_plt = np.linspace(0,fil.header.nchans,6)
+y_ticks = np.round(np.linspace(fil.header.fch1+(fil.header.nchans*fil.header.foff),fil.header.fch1,6),0)
 
 if end_data==-1:
     end_data = fil.header.nsamples
 data = fil.read_block(start_data,end_data)
 
+time = end_data/fil.header.nsamples
+x_ticks = np.round(np.linspace(0,time,10),2)
+
 plt.imshow(data,aspect='auto')
+plt.yticks(y_plt,y_ticks)
+plt.xticks(np.linspace(0,end_data,10),x_ticks)
+plt.xlabel("Time $(s)$")
+plt.ylabel("Frequency $(MHz)$")
 plt.title("Filterbank Data")
 plt.show()
