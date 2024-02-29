@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from rich.pretty import Pretty
 from sigpyproc.readers import FilReader
-from sys import argv
 import argparse
 
 filname = ''
@@ -34,7 +32,7 @@ data = fil.read_block(start_data,end_data)
 time = end_data/fil.header.nsamples
 x_ticks = np.round(np.linspace(0,time,10),2)
 
-plt.imshow(data,aspect='auto')
+plt.matshow(data,aspect='auto')
 plt.yticks(y_plt,y_ticks)
 plt.xticks(np.linspace(0,end_data,10),x_ticks)
 plt.xlabel("Time $(s)$")
