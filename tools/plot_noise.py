@@ -29,11 +29,11 @@ if end_data==-1:
     end_data = fil.header.nsamples
 data = fil.read_block(start_data,end_data)
 
-time = end_data/fil.header.nsamples
+time = end_data/fil.header.tsamp*10**-6
 x_ticks = np.round(np.linspace(0,time,10),2)
 
 plt.matshow(data,aspect='auto')
-plt.yticks(y_plt,y_ticks)
+plt.yticks(y_plt,y_ticks[::-1])
 plt.xticks(np.linspace(0,end_data,10),x_ticks)
 plt.xlabel("Time $(s)$")
 plt.ylabel("Frequency $(MHz)$")
