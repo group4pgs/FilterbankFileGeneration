@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser(description='Plotting the filterbank')
 parser.add_argument('input', type=str, help='Input Fitlerbank File')
 parser.add_argument('-s','--start', type=int, help='Start of the timeseries',default=0)
 parser.add_argument('-e','--end',type=int, help='End of timeseries (sample number [-1 for entire file])',default=-1)
+parser.add_argument('-d','--display',help='Setting this flag will show the image, and not print it',action='store_true')
+parser.add_argument('-f','--filename',type=str, help='Specific filename to save it in (default=img.png)')
 args = parser.parse_args()
 
 if args.input:
@@ -38,4 +40,10 @@ plt.xticks(np.linspace(0,end_data,10),x_ticks)
 plt.xlabel("Time $(s)$")
 plt.ylabel("Frequency $(MHz)$")
 plt.title("Filterbank Data")
-plt.show()
+if args.display:
+    plt.show()
+else:
+    if args.filename:
+        plt.savefig(args.filename)
+    else:
+        plt.savefig('img.png')
