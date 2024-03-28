@@ -31,7 +31,7 @@ if end_data==-1:
     end_data = fil.header.nsamples
 data = fil.read_block(start_data,end_data)
 
-time = end_data/fil.header.tsamp*10**-6
+time = end_data*(fil.header.tsamp)
 x_ticks = np.round(np.linspace(0,time,10),2)
 
 plt.matshow(data,aspect='auto')
@@ -40,10 +40,9 @@ plt.xticks(np.linspace(0,end_data,10),x_ticks)
 plt.xlabel("Time $(s)$")
 plt.ylabel("Frequency $(MHz)$")
 plt.title("Filterbank Data")
-if args.display:
+if args.filename == 'show':
     plt.show()
+elif args.filename:
+    plt.savefig(args.filename)
 else:
-    if args.filename:
-        plt.savefig(args.filename)
-    else:
-        plt.savefig('img.png')
+    plt.savefig('img.png')
