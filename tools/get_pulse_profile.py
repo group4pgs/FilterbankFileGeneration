@@ -11,8 +11,7 @@ period, dm = 0.0,0.0
 
 parser = argparse.ArgumentParser(description='Displays pulse profiles and trying for SNR too from Filterbank data')
 
-parser.add_argument('input', type=str, help='Input Fitlerbank File',required=True)
-parser.add_argument('-s','--snr', type=bool, help='Set True to get SNR of the pulse',default=False)
+parser.add_argument('input', type=str, help='Input Fitlerbank File')
 parser.add_argument('-p','--period',type=float, help='Set the period for folding the pulse (s)',required=True)
 parser.add_argument('-d','--dm',type=float,help='Set the DM to dedisperse the time-series (kpc/cm^3)',required=True)
 parser.add_argument('-n','--normalise',type=bool,default=False)
